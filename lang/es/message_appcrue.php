@@ -18,37 +18,18 @@
  * AppCrue message plugin version information.
  *
  * @package message_appcrue
+ * @category admin
+ * @author Jose Manuel Lorenzo
  * @author  Juan Pablo de Castro
- * @copyright  2021 onwards Juan Pablo de Castro (juanpablo.decastro@uva.es)
+ * @copyright 2021 onwards josemanuel.lorenzo@ticarum.es, juanpablo.decastro@uva.es
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-
-namespace message_appcrue;
 
 defined('MOODLE_INTERNAL') || die();
-require_once($CFG->dirroot.'/lib/filelib.php');
-/**
- * AppCrue helper manager class
- *
- * @author  Juan Pablo de Castro
- * @copyright  2017 onwards Juan Pablo de Castro (juanpablo.decastro@uva.es)
- * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- */
-class manager {
-    /**
-     * @var $curl The curl object used in this run. Avoids continuous creation of a curl object.
-     */
-    private $curl = null;
-    private $config = new stdClass();
-
-    /**
-     * Constructor. Loads all needed data.
-     */
-    public function __construct() {
-        $this->curl = curl_init;
-        $this->config = get_config('message_appcrue');
-    }
-
-
-
-}
+$string['pluginname'] = 'Notificaciones push para Appcrue';
+$string['api_key'] = 'APIKey del servicio de notificación AppCrue';
+$string['api_key_help'] = 'APIKey del servicio de notificación AppCrue';
+$string['app_id'] = 'AppId para AppCrue Notification';
+$string['app_id_help'] = 'Token de la universidad para notificaciones';
+$string['only_news_forum'] = 'Solo foros tablón de anuncios.';
+$string['only_news_forum_help'] = 'Filtra las notificacioens de los foros y solo envía las del foro de anuncios de los cursos.';

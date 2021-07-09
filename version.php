@@ -15,11 +15,14 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Plugin version and other meta-data are defined here.
+ * AppCrue message plugin version information.
  *
- * @package     message_appcrue
- * @copyright   josemanuel.lorenzo@ticarum.es
- * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @package message_appcrue
+ * @category admin
+ * @author Jose Manuel Lorenzo
+ * @author  Juan Pablo de Castro
+ * @copyright 2021 onwards josemanuel.lorenzo@ticarum.es, juanpablo.decastro@uva.es
+ * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();

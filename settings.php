@@ -15,21 +15,20 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Plugin administration pages are defined here.
+ * AppCrue message plugin version information.
  *
- * @package     message_appcrue
- * @category    admin
- * @copyright   josemanuel.lorenzo@ticarum.es
- * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @package message_appcrue
+ * @category admin
+ * @author Jose Manuel Lorenzo
+ * @author  Juan Pablo de Castro
+ * @copyright 2021 onwards josemanuel.lorenzo@ticarum.es, juanpablo.decastro@uva.es
+ * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();
-require_once('message_output_appcrue.php');
 
 if ($ADMIN->fulltree) {
-   // TODO: Define the plugin settings page.
-   // https://docs.moodle.org/dev/Admin_settings
-    $settings->add(new admin_setting_configtext(APPCRUE_APIKEY,'APIKEYCREATOR','token del API-Key-Creator','',PARAM_TEXT));
-    $settings->add(new admin_setting_configtext(APPCRUE_APPID,'app_id','token de la universidad','',PARAM_TEXT));
-    $settings->add(new admin_setting_configcheckbox(APPCRUE_ONLYNEWSFORUM,'Aplicar filtro en foros','Aplicar filtro en foros',1));
+    $settings->add(new admin_setting_configtext('message_appcrue_apikey', get_string('api_key','message_appcrue'), get_string('api_key_help','message_appcrue'),'',PARAM_TEXT));
+    $settings->add(new admin_setting_configtext('message_appcrue_appid', get_string('app_id','message_appcrue'), get_string('app_id_help','message_appcrue'),'',PARAM_TEXT));
+    $settings->add(new admin_setting_configcheckbox('message_appcrue_onlynewsforum', get_string('only_news_forum','message_appcrue'), get_string('only_news_forum_help','message_appcrue'),1));
 }

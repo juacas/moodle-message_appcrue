@@ -1,12 +1,15 @@
-# appcruename #
+# AppCRUENotify message output #
 
-TODO Describe the plugin shortly here.
+Enable Moodle to send messages through the notification service of AppCrue application.
+This message output plugin provides the following services:
+- Allow to send only "News" messages for every course.
+- Format forum, instant messages to fit better in mobile notifications.
+
+The notifications can be enabled/disabled/forced using Moodle's core notifications settings and user's preferences.
 
 TODO Provide more detailed description here.
 
 ## License ##
-
-josemanuel.lorenzo@ticarum.es
 
 This program is free software: you can redistribute it and/or modify it under
 the terms of the GNU General Public License as published by the Free Software
