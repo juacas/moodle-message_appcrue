@@ -28,7 +28,10 @@
 defined('MOODLE_INTERNAL') || die();
 
 if ($ADMIN->fulltree) {
-    $settings->add(new admin_setting_configtext('message_appcrue_apikey', get_string('api_key','message_appcrue'), get_string('api_key_help','message_appcrue'),'',PARAM_TEXT));
-    $settings->add(new admin_setting_configtext('message_appcrue_appid', get_string('app_id','message_appcrue'), get_string('app_id_help','message_appcrue'),'',PARAM_TEXT));
-    $settings->add(new admin_setting_configcheckbox('message_appcrue_onlynewsforum', get_string('only_news_forum','message_appcrue'), get_string('only_news_forum_help','message_appcrue'),1));
+    $settings->add(new admin_setting_configtext('message_appcrue_apikey', get_string('api_key', 'message_appcrue'),
+                                                get_string('api_key_help', 'message_appcrue'), '', PARAM_TEXT));
+    $settings->add(new admin_setting_configtext('message_appcrue_appid', get_string('app_id', 'message_appcrue'),
+                                                get_string('app_id_help', 'message_appcrue'), '', PARAM_TEXT));
+    $settings->add(new admin_setting_configcheckbox('message_appcrue_onlynewsforum', get_string('only_news_forum', 'message_appcrue'),
+                                                get_string('only_news_forum_help', 'message_appcrue'), 1));
 }
