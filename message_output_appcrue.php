@@ -39,14 +39,14 @@ class message_output_appcrue extends \message_output {
      * @return true if ok, false if error
      */
     public function send_message($eventdata) {
-
+        global $CFG;
         // Skip any messaging of suspended and deleted users.
         if ($eventdata->userto->auth === 'nologin' or $eventdata->userto->suspended or $eventdata->userto->deleted) {
             return true;
         }
         // Skip any messaging if suspended by admin system-wide.
         if (!empty($CFG->noemailever)) {
-            // hidden setting for development sites, set in config.php if needed
+            // Hidden setting for development sites, set in config.php if needed.
             debugging('$CFG->noemailever is active, no appcrue message sent.', DEBUG_MINIMAL);
             return true;
         }
@@ -70,7 +70,7 @@ class message_output_appcrue extends \message_output {
             if (preg_match($re, $eventdata->fullmessage, $matches)) {
                 $url = $matches[1];
             }
-            // And add text from Subject: i.e. "New message from Juan-Pablo de Castro"
+            // And add text from Subject.
             $message = $eventdata->subject . "\n" . $eventdata->smallmessage;
         }
 
@@ -89,37 +89,36 @@ class message_output_appcrue extends \message_output {
      */
     public function send_api_message($user, $message, $url='') {
         global $CFG;
-        $apiCreator= $CFG->message_appcrue_apikey;
-        $deviceId= $CFG->message_appcrue_appid;
+        $apicreator = $CFG->message_appcrue_apikey;
+        $appid = $CFG->message_appcrue_appid;
         $data = new stdClass();
-        $data->broadcast= false;
+        $data->broadcast = false;
         $data->devices_aliases = array($user->username);
-        $data->devices_ids= array();
-        $data->segments= array();
+        $data->devices_ids = array();
+        $data->segments = array();
         $target = new stdClass();
         $target->name = array();
         $target->values = array();
         $data->target_property = $target;
         $data->title = get_site()->fullname;
         $data->group_name = "Moodle message";
-        $data->alert =$message;
+        $data->alert = $message;
         $data->url = $url;
-        $data->inbox =true;
-        $jsonNotificacion = json_encode($data);
+        $data->inbox = true;
+        $jsonnotificacion = json_encode($data);
         $ch = curl_init();
-        //attach encoded JSON string to the POST fields
-        curl_setopt($ch, CURLOPT_POSTFIELDS, $jsonNotificacion);
-        //set the content type to application/json
-        curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type:application/json','X-TwinPush-REST-API-Key-Creator:'.$apiCreator));
-        curl_setopt($ch, CURLOPT_URL, "https://appcrue.twinpush.com/api/v2/apps/$deviceId/notifications");
+        // Attach encoded JSON string to the POST fields.
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $jsonnotificacion);
+        // Set the content type to application/json.
+        curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type:application/json', 'X-TwinPush-REST-API-Key-Creator:'.$apicreator));
+        curl_setopt($ch, CURLOPT_URL, "https://appcrue.twinpush.com/api/v2/appinotifications");
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
         curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5); // JPC: Limit impact on other scheduled tasks.
         curl_exec($ch);
-        // Catch errors and log them
-        // Check if any error occurred
-        if(curl_errno($ch))
-        {
+        // Catch errors and log them.
+        // Check if any error occurred.
+        if (curl_errno($ch)) {
             debugging('Curl error: ' . curl_error($ch));
             curl_close($ch);
             return false;
@@ -176,16 +175,17 @@ class message_output_appcrue extends \message_output {
     protected function skip_message($eventdata) {
         global $CFG, $DB;
         // If configured, skip forum messages not from "news" special forum.
-        if( $CFG->message_appcrue_onlynewsforum == true
-            && $eventdata->component == 'mod_forum'
-            && preg_match('/\Wd=(\d+)/', $eventdata->contexturl, $matches) ) {
-                $id =(int)$matches[1];
-                $forumid= $DB->get_field('forum_discussions', 'forum', array('id' => $id));
-                $forum = $DB->get_record("forum", array("id" => $forumid));
-                if($forum->type  !== "news"){
-                    debugging("This forum message is filtered out due to configuration.");
-                    return true;
-                }
+        if ($CFG->message_appcrue_onlynewsforum == true &&
+            $eventdata->component == 'mod_forum' &&
+            preg_match('/\Wd=(\d+)/', $eventdata->contexturl, $matches) ) {
+
+            $id = (int) $matches[1];
+            $forumid = $DB->get_field('forum_discussions', 'forum', array('id' => $id));
+            $forum = $DB->get_record("forum", array("id" => $forumid));
+            if ($forum->type !== "news") {
+                debugging("This forum message is filtered out due to configuration.");
+                return true;
+            }
         }
         return false;
     }

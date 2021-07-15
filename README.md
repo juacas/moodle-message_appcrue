@@ -1,14 +1,11 @@
 # AppCRUENotify message output #
 
-Enable Moodle to send messages through the notification service of AppCrue application.
+Enable Moodle to send messages through the notification service of AppCrue application using TwinPush API.
 This message output plugin provides the following services:
-- Allow to send only "News" messages for every course.
-- Format forum, instant messages to fit better in mobile notifications.
+- Allow admins to send only messages from the "News" forum of the course.
+- Format the messages from the forum, instant messaging to fit better in the mobile notifications.
 
 The notifications can be enabled/disabled/forced using Moodle's core notifications settings and user's preferences.
-
-TODO Provide more detailed description here.
-
 ## License ##
 
 This program is free software: you can redistribute it and/or modify it under
