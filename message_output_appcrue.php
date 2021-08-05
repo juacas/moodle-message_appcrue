@@ -92,7 +92,7 @@ class message_output_appcrue extends \message_output {
         $appid = get_config('message_appcrue', 'appid');
         $data = new stdClass();
         $data->broadcast = false;
-        $data->devices_aliases = array($user->username);
+        $data->devices_aliases = array($this->get_nick_name($user));
         $data->devices_ids = array();
         $data->segments = array();
         $target = new stdClass();
@@ -110,12 +110,13 @@ class message_output_appcrue extends \message_output {
         curl_setopt($ch, CURLOPT_POSTFIELDS, $jsonnotificacion);
         // Set the content type to application/json.
         curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type:application/json', 'X-TwinPush-REST-API-Key-Creator:'.$apicreator));
-        curl_setopt($ch, CURLOPT_URL, "https://appcrue.twinpush.com/api/v2/appinotifications");
+        curl_setopt($ch, CURLOPT_URL, "https://appcrue.twinpush.com/api/v2/apps/{$appid}/notifications");
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
         curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5); // JPC: Limit impact on other scheduled tasks.
-        curl_exec($ch);
+        $response = curl_exec($ch);
         // Catch errors and log them.
+        debugging("Push API Response:{$response}", DEBUG_DEVELOPER);
         // Check if any error occurred.
         if (curl_errno($ch)) {
             debugging('Curl error: ' . curl_error($ch));
@@ -125,6 +126,16 @@ class message_output_appcrue extends \message_output {
             curl_close($ch);
             return true;
         }
+    }
+    /**
+     * Returns the target nickname of the user in the Push API
+     */
+    public function get_nick_name($user) {
+        $fieldname = get_config('message_appcrue', 'match_user_by');
+        if (!isset($user->$fieldname)) {
+            profile_load_data($user);
+        }
+        return $user->$fieldname;
     }
     /**
      * Creates necessary fields in the messaging config form.

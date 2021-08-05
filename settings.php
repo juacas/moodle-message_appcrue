@@ -35,4 +35,22 @@ if ($ADMIN->fulltree) {
     $settings->add(new admin_setting_configcheckbox('message_appcrue/onlynewsforum',
                                                 get_string('only_news_forum', 'message_appcrue'),
                                                 get_string('only_news_forum_help', 'message_appcrue'), 1));
+    $fields = get_user_fieldnames();
+    $customfields = profile_get_custom_fields();
+    $userfields = [];
+    // Make the keys string values and not indexes.
+    foreach ($fields as $field) {
+        $userfields[$field] = $field;
+    }
+    foreach ($customfields as $field) {
+        $userfields["profile_field_{$field->shortname}"] = $field->name;
+    }
+    $settings->add(new admin_setting_configselect(
+        'message_appcrue/match_user_by',
+        get_string('match_user_by', 'message_appcrue'),
+        get_string('match_user_by_help', 'message_appcrue'),
+        'id',
+        $userfields
+    ));
+
 }

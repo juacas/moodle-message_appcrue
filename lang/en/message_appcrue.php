@@ -33,3 +33,5 @@ $string['app_id'] = 'AppId for AppCrue Notification';
 $string['app_id_help'] = 'AppId for AppCrue Notification';
 $string['only_news_forum'] = 'Filter forums notifications.';
 $string['only_news_forum_help'] = 'Filter forums notifications and only send messages from the "News" forum.';
+$string['match_user_by'] = 'Field for matching user in Push API';
+$string['match_user_by_help'] = 'Each user is associated to a name in the push API that may not match with userid in Moodle.';
