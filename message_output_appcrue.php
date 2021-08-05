@@ -88,9 +88,8 @@ class message_output_appcrue extends \message_output {
      * @param string $url url to see the details of the notification.
      */
     public function send_api_message($user, $message, $url='') {
-        global $CFG;
-        $apicreator = $CFG->message_appcrue_apikey;
-        $appid = $CFG->message_appcrue_appid;
+        $apicreator = get_config('message_appcrue', 'apikey');
+        $appid = get_config('message_appcrue', 'appid');
         $data = new stdClass();
         $data->broadcast = false;
         $data->devices_aliases = array($user->username);
@@ -164,8 +163,7 @@ class message_output_appcrue extends \message_output {
      * @return boolean true if Telegram is configured
      */
     public function is_system_configured() {
-        global $CFG;
-        return (isset($CFG->message_appcrue_apikey) && isset($CFG->message_appcrue_appid));
+        return (get_config('message_appcrue', 'apikey') && get_config('message_appcrue', 'appid'));
     }
     /**
      * Check wheter to skip this message or not.
@@ -173,9 +171,9 @@ class message_output_appcrue extends \message_output {
      * @return boolean should be skiped?
      */
     protected function skip_message($eventdata) {
-        global $CFG, $DB;
+        global $DB;
         // If configured, skip forum messages not from "news" special forum.
-        if ($CFG->message_appcrue_onlynewsforum == true &&
+        if (get_config('message_appcrue', 'onlynewsforum') == true &&
             $eventdata->component == 'mod_forum' &&
             preg_match('/\Wd=(\d+)/', $eventdata->contexturl, $matches) ) {
 
