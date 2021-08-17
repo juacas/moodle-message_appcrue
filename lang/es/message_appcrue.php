@@ -33,3 +33,6 @@ $string['app_id'] = 'AppId para AppCrue Notification';
 $string['app_id_help'] = 'Token de la universidad para notificaciones';
 $string['only_news_forum'] = 'Solo foros tablón de anuncios.';
 $string['only_news_forum_help'] = 'Filtra las notificacioens de los foros y solo envía las del foro de anuncios de los cursos.';
+$string['match_user_by'] = 'Campo para identificar al usuraio en Twin Push API';
+$string['match_user_by_help'] = 'Cada usuario está asociado a un nombre en la Twin API push que puede no coincidir con el userid en Moodle.';
+$string['privacy:metadata'] = 'El plugin "Notificaciones push para Appcrue" no almacena ningún dato personal.';
