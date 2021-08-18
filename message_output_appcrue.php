@@ -194,7 +194,7 @@ class message_output_appcrue extends \message_output {
             $forumid = $DB->get_field('forum_discussions', 'forum', array('id' => $id));
             $forum = $DB->get_record("forum", array("id" => $forumid));
             if ($forum->type !== "news") {
-                debugging("This forum message is filtered out due to configuration.");
+                debugging("This forum message is filtered out due to configuration.", DEBUG_DEVELOPER);
                 return true;
             }
         }

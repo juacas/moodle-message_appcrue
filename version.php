@@ -28,10 +28,10 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'message_appcrue';
-$plugin->release = '0.2.4';
-$plugin->version = 2021080500;
+$plugin->release = '0.2.5';
+$plugin->version = 2021081800;
 $plugin->requires = 2015111600;
-$plugin->maturity = MATURITY_BETA;
+$plugin->maturity = MATURITY_STABLE;
 $plugin->dependencies = [
     'mod_forum' => ANY_VERSION
 ];
