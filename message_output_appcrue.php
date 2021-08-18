@@ -53,6 +53,10 @@ class message_output_appcrue extends \message_output {
         if ($this->skip_message($eventdata)) {
             return true;
         }
+        if ($this->is_system_configured() == false) {
+            debugging('Appcrue endpoint is not configured in settings.', DEBUG_NORMAL);
+            return true;
+        }
         $url = $eventdata->contexturl;
         $message  = $eventdata->fullmessage;
         // Parse and format diferent message formats.
@@ -105,25 +109,23 @@ class message_output_appcrue extends \message_output {
         $data->url = $url;
         $data->inbox = true;
         $jsonnotificacion = json_encode($data);
-        $ch = curl_init();
-        // Attach encoded JSON string to the POST fields.
-        curl_setopt($ch, CURLOPT_POSTFIELDS, $jsonnotificacion);
-        // Set the content type to application/json.
-        curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type:application/json', 'X-TwinPush-REST-API-Key-Creator:'.$apicreator));
-        curl_setopt($ch, CURLOPT_URL, "https://appcrue.twinpush.com/api/v2/apps/{$appid}/notifications");
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
-        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5); // JPC: Limit impact on other scheduled tasks.
-        $response = curl_exec($ch);
+        $clientsettings = [];
+        $client= new curl();
+        $client->setHeader(array('Content-Type:application/json', 'X-TwinPush-REST-API-Key-Creator:'.$apicreator));
+        $options = [
+            'CURLOPT_RETURNTRANSFER' => true,
+            'CURLOPT_CONNECTTIMEOUT' => 5 // JPC: Limit impact on other scheduled tasks.
+        ];
+        $response = $client->post("https://appcrue.twinpush.com/api/v2/apps/{$appid}/notifications",
+            $jsonnotificacion,
+            $options);
         // Catch errors and log them.
         debugging("Push API Response:{$response}", DEBUG_DEVELOPER);
         // Check if any error occurred.
-        if (curl_errno($ch)) {
-            debugging('Curl error: ' . curl_error($ch));
-            curl_close($ch);
+        if ($client->get_errno()) {
+            debugging('Curl error: ' . $client->get_errno());
             return false;
         } else {
-            curl_close($ch);
             return true;
         }
     }
@@ -171,7 +173,7 @@ class message_output_appcrue extends \message_output {
 
     /**
      * Tests whether the AppCrue settings have been configured
-     * @return boolean true if Telegram is configured
+     * @return boolean true if API is configured
      */
     public function is_system_configured() {
         return (get_config('message_appcrue', 'apikey') && get_config('message_appcrue', 'appid'));
