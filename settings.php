@@ -28,6 +28,11 @@
 defined('MOODLE_INTERNAL') || die();
 
 if ($ADMIN->fulltree) {
+    $settings->add(new admin_setting_configcheckbox(
+        'message_appcrue/enable_push',
+        get_string('enable_push', 'message_appcrue'), null,
+        true
+    ));
     $settings->add(new admin_setting_configtext('message_appcrue/apikey', get_string('api_key', 'message_appcrue'),
                                                 get_string('api_key_help', 'message_appcrue'), '', PARAM_TEXT));
     $settings->add(new admin_setting_configtext('message_appcrue/appid', get_string('app_id', 'message_appcrue'),

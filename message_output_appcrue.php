@@ -40,8 +40,11 @@ class message_output_appcrue extends \message_output {
      */
     public function send_message($eventdata) {
         global $CFG;
+        $enabled = get_config('message_appcrue', 'enable_push');
         // Skip any messaging of suspended and deleted users.
-        if ($eventdata->userto->auth === 'nologin' or $eventdata->userto->suspended or $eventdata->userto->deleted) {
+        if (!$enabled or $eventdata->userto->auth === 'nologin'
+            or $eventdata->userto->suspended
+            or $eventdata->userto->deleted) {
             return true;
         }
         // Skip any messaging if suspended by admin system-wide.
@@ -109,7 +112,6 @@ class message_output_appcrue extends \message_output {
         $data->url = $url;
         $data->inbox = true;
         $jsonnotificacion = json_encode($data);
-        $clientsettings = [];
         $client= new curl();
         $client->setHeader(array('Content-Type:application/json', 'X-TwinPush-REST-API-Key-Creator:'.$apicreator));
         $options = [

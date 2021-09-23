@@ -36,3 +36,4 @@ $string['only_news_forum_help'] = 'Filter forums notifications and only send mes
 $string['match_user_by'] = 'Field for matching user in Push API';
 $string['match_user_by_help'] = 'Each user is associated to a name in the push API that may not match with userid in Moodle.';
 $string['privacy:metadata'] = 'The "Push Notifications for AppCrue" plugin does not store any personal data.';
+$string['enable_push'] = 'Enable push message service';

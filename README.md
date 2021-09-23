@@ -23,7 +23,7 @@ The notifications can be enabled/disabled/forced using Moodle's core notificatio
 
 ## Privacy ##
 
-This plugin does not storage any user information. It just sends to TwinPush the field used to match the user and the content of the message.
+This plugin does not store any user information. It just sends to TwinPush the field used to match the user and the content of the message.
 
 ## License ##
 
