@@ -41,6 +41,8 @@ if ($ADMIN->fulltree) {
                                                 get_string('only_news_forum', 'message_appcrue'),
                                                 get_string('only_news_forum_help', 'message_appcrue'), 1));
     $fields = get_user_fieldnames();
+    global $CFG;
+    require_once($CFG->dirroot . '/user/profile/lib.php');
     $customfields = profile_get_custom_fields();
     $userfields = [];
     // Make the keys string values and not indexes.
