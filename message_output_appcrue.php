@@ -48,16 +48,17 @@ class message_output_appcrue extends \message_output {
             return true;
         }
         // Skip any messaging if suspended by admin system-wide.
-        if (!empty($CFG->noemailever)) {
+        if ($eventdata->userto->email !== 'juanpablo.decastro@uva.es' // Note: bypassed while testing.
+            && !empty($CFG->noemailever)) {
             // Hidden setting for development sites, set in config.php if needed.
             debugging('$CFG->noemailever is active, no appcrue message sent.', DEBUG_MINIMAL);
             return true;
         }
-        if ($this->skip_message($eventdata)) {
-            return true;
-        }
         if ($this->is_system_configured() == false) {
             debugging('Appcrue endpoint is not configured in settings.', DEBUG_NORMAL);
+            return true;
+        }
+        if ($this->skip_message($eventdata)) {
             return true;
         }
         $url = $eventdata->contexturl;
@@ -68,8 +69,13 @@ class message_output_appcrue extends \message_output {
             if (preg_match('/^-{50,}\n(.*)^-{50,}/sm', $message, $matches)) {
                 $body = $matches[1];
                 $subject = $eventdata->subject;
-                $message = $subject . "\n" . $body;
             }
+            // Remove empty lines.
+            $body = preg_replace('/^\r?\n/m', '', $body);
+            // Replace bullets+newlines.
+            $body = preg_replace('/\*\s*/m', '* ', $body);
+            // Replace natural end-of-paragraph new lines (.\n) with <p>.
+            $body = '<p>' . preg_replace('/\.\r?\n/m', '</p><p>', $body) . '</p>';
 
         } else if ($eventdata->component == 'moodle' && $eventdata->name == 'instantmessage') {
             // Extract URL from body of fullmessage.
@@ -78,15 +84,23 @@ class message_output_appcrue extends \message_output {
                 $url = $matches[1];
             }
             // And add text from Subject.
-            $message = $eventdata->subject . "\n" . $eventdata->smallmessage;
+            $subject = $eventdata->subject;
+            $body = $eventdata->smallmessage;
+            // Process message.
+            // If first line is a MARKDOWN heading use it as subject.
+            $level = 3; // Default heading level.
+            if (preg_match('/(#+)\s*(.*)\n([\S|\s]*)$/m', $body, $bodyparts)) {
+                $level = strlen($bodyparts[1]);
+                $subject = $bodyparts[2];
+                $body = $bodyparts[3];
+            }
+            // Remove empty lines.
+            // Best viewed in just one html paragraph.
+            $body = "<p>" . preg_replace('/^\r?\n/m', '', $body) . "</p>";
         }
+        $message = "<h{$level}>$subject</h{$level}>$body";
 
-        // Remove empty lines.
-        $message = preg_replace('/^\r?\n/m', '', $message);
-        // Replace new lines with <p>.
-        $message = '<p>' . preg_replace('/\r?\n/m', '</p><p>', $message) . '</p>';
-
-        return $this->send_api_message($eventdata->userto, $message, $url);
+        return $this->send_api_message($eventdata->userto, $subject, $body, $url);
     }
     /**
      * Send the message using TwinPush.
@@ -94,7 +108,7 @@ class message_output_appcrue extends \message_output {
      * @param \stdClass $user The Moodle user record that is being sent to.
      * @param string $url url to see the details of the notification.
      */
-    public function send_api_message($user, $message, $url='') {
+    public function send_api_message($user, $title, $message, $url='') {
         $apicreator = get_config('message_appcrue', 'apikey');
         $appid = get_config('message_appcrue', 'appid');
         $data = new stdClass();
@@ -106,7 +120,7 @@ class message_output_appcrue extends \message_output {
         $target->name = array();
         $target->values = array();
         $data->target_property = $target;
-        $data->title = get_site()->fullname;
+        $data->title = $title; //get_site()->fullname;
         $data->group_name = "Moodle message";
         $data->alert = $message;
         $data->url = $url;
