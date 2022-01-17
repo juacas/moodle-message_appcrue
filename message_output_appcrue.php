@@ -122,7 +122,7 @@ class message_output_appcrue extends \message_output {
         $data->target_property = $target;
         $data->title = $title; //get_site()->fullname;
         $data->group_name = "Moodle message";
-        $data->alert = $message;
+        $data->alert = $this->trim_alert_text($message);
         $data->url = $url;
         $data->inbox = true;
         $jsonnotificacion = json_encode($data);
@@ -144,6 +144,14 @@ class message_output_appcrue extends \message_output {
         } else {
             return true;
         }
+    }
+    /** Limit lenght of text to 240 characters */
+    protected function trim_alert_text($text) {
+        if (strlen($text) > 240) {
+            $trimmed = substr($text, 0, 240) . '...';
+            return $trimmed;
+        }
+        return $text;
     }
     /**
      * Returns the target nickname of the user in the Push API
