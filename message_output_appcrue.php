@@ -48,7 +48,7 @@ class message_output_appcrue extends \message_output {
             return true;
         }
         // Skip any messaging if suspended by admin system-wide.
-        if ($eventdata->userto->email !== 'juanpablo.decastro@uva.es' // Note: bypassed while testing.
+        if ($eventdata->userto->email !== 'dummyuser@bademail.local' // Note: special user bypassed while testing.
             && !empty($CFG->noemailever)) {
             // Hidden setting for development sites, set in config.php if needed.
             debugging('$CFG->noemailever is active, no appcrue message sent.', DEBUG_MINIMAL);
@@ -63,6 +63,7 @@ class message_output_appcrue extends \message_output {
         }
         $url = $eventdata->contexturl;
         $message  = $eventdata->fullmessage;
+        $level = 3; // Default heading level.
         // Parse and format diferent message formats.
         if ($eventdata->component == 'mod_forum') {
             // Extract body.
@@ -88,7 +89,6 @@ class message_output_appcrue extends \message_output {
             $body = $eventdata->smallmessage;
             // Process message.
             // If first line is a MARKDOWN heading use it as subject.
-            $level = 3; // Default heading level.
             if (preg_match('/(#+)\s*(.*)\n([\S|\s]*)$/m', $body, $bodyparts)) {
                 $level = strlen($bodyparts[1]);
                 $subject = $bodyparts[2];
@@ -99,8 +99,12 @@ class message_output_appcrue extends \message_output {
             $body = "<p>" . preg_replace('/^\r?\n/m', '', $body) . "</p>";
         }
         $message = "<h{$level}>$subject</h{$level}>$body";
+<<<<<<< HEAD
         // Create target url.
         $url = $this->get_target_url($url);
+=======
+        // TODO: buffer volume messages in a table an send them in bulk.
+>>>>>>> 4037f48c16d39cff4eb6fcda6fc4fda09c05cd07
         return $this->send_api_message($eventdata->userto, $subject, $body, $url);
     }
     /**
@@ -124,13 +128,19 @@ class message_output_appcrue extends \message_output {
      * @param string $message The message contect to send to AppCrue.
      * @param \stdClass $user The Moodle user record that is being sent to.
      * @param string $url url to see the details of the notification.
+     * @return boolean false if message was not sent, true if sent.
      */
     public function send_api_message($user, $title, $message, $url='') {
+        $device_alias = $this->get_nick_name($user);
+        if ($device_alias == '') {
+            debugging("User {$user->id} has no device alias.", DEBUG_NORMAL);
+            return true;
+        }
         $apicreator = get_config('message_appcrue', 'apikey');
         $appid = get_config('message_appcrue', 'appid');
         $data = new stdClass();
         $data->broadcast = false;
-        $data->devices_aliases = array($this->get_nick_name($user));
+        $data->devices_aliases = array($device_alias);
         $data->devices_ids = array();
         $data->segments = array();
         $target = new stdClass();
