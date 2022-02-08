@@ -99,8 +99,25 @@ class message_output_appcrue extends \message_output {
             $body = "<p>" . preg_replace('/^\r?\n/m', '', $body) . "</p>";
         }
         $message = "<h{$level}>$subject</h{$level}>$body";
-
+        // Create target url.
+        $url = $this->get_target_url($url);
         return $this->send_api_message($eventdata->userto, $subject, $body, $url);
+    }
+    /**
+     * If module local_appcrue is installed and configured uses autologin.php to navigate.
+     * @see local_appcrue plugin.
+     */
+    protected function get_target_url($url) {
+        global $CFG;
+        $urlpattern = get_config('message_appcrue', 'urlpattern');
+        if (empty($urlpattern)) {
+            return $url;
+        }
+        // Escape url.
+        $url = urlencode($url);
+        // Replace placeholders.
+        $url = str_replace(['{url}', '{siteurl}'], [$url, $CFG->wwwroot], $urlpattern);
+        return $url;
     }
     /**
      * Send the message using TwinPush.
