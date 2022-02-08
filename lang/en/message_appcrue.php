@@ -37,5 +37,5 @@ $string['match_user_by'] = 'Field for matching user in Push API';
 $string['match_user_by_help'] = 'Each user is associated to a name in the push API that may not match with userid in Moodle.';
 $string['privacy:metadata'] = 'The "Push Notifications for AppCrue" plugin does not store any personal data.';
 $string['enable_push'] = 'Enable push message service';
-$string['url_pattern_help'] = 'URL pattern for push notifications. The following variables are available: {url}:the message\'s url, {siteurl}:base url of the server.';
+$string['url_pattern_help'] = 'URL pattern for push notifications. The following variables are available: {url}:the message\'s url, {siteurl}:base url of the server. Example: {siteurl}/local/appcrue/autologin.php?urltogo={url}&fallback=continue&<bearer>';
 $string['url_pattern'] = 'URL pattern for the event\'s links.';

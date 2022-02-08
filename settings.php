@@ -62,9 +62,8 @@ if ($ADMIN->fulltree) {
         'id',
         $userfields
     ));
-    // Default url is autologin.php from local_appcrue plugin.
-    $defaulturl = "{siteurl}/local/appcrue/autologin.php?urltogo={url}&fallback=continue&<bearer>";
+    
     // Configure url pattern for generating the urls to the events.
     $settings->add(new admin_setting_configtext('message_appcrue/urlpattern', get_string('url_pattern', 'message_appcrue'),
-    get_string('url_pattern_help', 'message_appcrue'), $defaulturl, PARAM_RAW_TRIMMED, 100));
+    get_string('url_pattern_help', 'message_appcrue'), '', PARAM_RAW_TRIMMED, 100));
 }

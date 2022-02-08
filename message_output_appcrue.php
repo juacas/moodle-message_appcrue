@@ -99,12 +99,9 @@ class message_output_appcrue extends \message_output {
             $body = "<p>" . preg_replace('/^\r?\n/m', '', $body) . "</p>";
         }
         $message = "<h{$level}>$subject</h{$level}>$body";
-<<<<<<< HEAD
         // Create target url.
         $url = $this->get_target_url($url);
-=======
         // TODO: buffer volume messages in a table an send them in bulk.
->>>>>>> 4037f48c16d39cff4eb6fcda6fc4fda09c05cd07
         return $this->send_api_message($eventdata->userto, $subject, $body, $url);
     }
     /**

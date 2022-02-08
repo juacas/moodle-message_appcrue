@@ -36,5 +36,5 @@ $string['only_news_forum_help'] = 'Filtra las notificacioens de los foros y solo
 $string['match_user_by'] = 'Campo para identificar al usuario en Twin Push API';
 $string['match_user_by_help'] = 'Cada usuario está asociado a un nombre en la Twin API push que puede no coincidir con el userid en Moodle.';
 $string['privacy:metadata'] = 'El plugin "Notificaciones push para Appcrue" no almacena ningún dato personal.';
-$string['url_pattern_help'] = 'Patrón de URL para las notificaciones push. Las siguientes variables están disponibles: {url}: el url del mensaje, {siteurl}: el url base del servidor.';
+$string['url_pattern_help'] = 'Patrón de URL para las notificaciones push. Las siguientes variables están disponibles: {url}: el url del mensaje, {siteurl}: el url base del servidor. por ejemplo: {siteurl}/local/appcrue/autologin.php?urltogo={url}&fallback=continue&<bearer>';
 $string['url_pattern'] = 'Patrón de URL para los enlaces de los eventos.';
