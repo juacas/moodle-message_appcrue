@@ -94,7 +94,6 @@ class message_output_appcrue extends \message_output {
                 $subject = $bodyparts[2];
                 $body = $bodyparts[3];
             }
-            $subject = '💬 ' . $subject;
             // Remove empty lines.
             // Best viewed in just one html paragraph.
             $body = "<p>" . preg_replace('/^\r?\n/m', '', $body) . "</p>";
