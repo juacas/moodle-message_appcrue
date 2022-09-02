@@ -64,12 +64,13 @@ class message_output_appcrue extends \message_output {
         $url = $eventdata->contexturl;
         $message  = $eventdata->fullmessage;
         $level = 3; // Default heading level.
+        $subject = $eventdata->subject;
+        $body = $eventdata->smallmessage;
         // Parse and format diferent message formats.
         if ($eventdata->component == 'mod_forum') {
             // Extract body.
             if (preg_match('/^-{50,}\n(.*)^-{50,}/sm', $message, $matches)) {
                 $body = $matches[1];
-                $subject = $eventdata->subject;
             }
             // Remove empty lines.
             $body = preg_replace('/^\r?\n/m', '', $body);
@@ -80,12 +81,11 @@ class message_output_appcrue extends \message_output {
 
         } else if ($eventdata->component == 'moodle' && $eventdata->name == 'instantmessage') {
             // Extract URL from body of fullmessage.
-            $re = '/((https:\/\/)[^\s.]+\.[\w][^\s]+)/m';
+            $re = '/((https?:\/\/)[^\s.]+\.[:\w][^\s]+)/m';
             if (preg_match($re, $eventdata->fullmessage, $matches)) {
                 $url = $matches[1];
             }
             // And add text from Subject.
-            $subject = $eventdata->subject;
             $body = $eventdata->smallmessage;
             // Process message.
             // If first line is a MARKDOWN heading use it as subject.
@@ -128,8 +128,8 @@ class message_output_appcrue extends \message_output {
      * @return boolean false if message was not sent, true if sent.
      */
     public function send_api_message($user, $title, $message, $url='') {
-        $device_alias = $this->get_nick_name($user);
-        if ($device_alias == '') {
+        $devicealias = $this->get_nick_name($user);
+        if ($devicealias == '') {
             debugging("User {$user->id} has no device alias.", DEBUG_NORMAL);
             return true;
         }
@@ -137,20 +137,20 @@ class message_output_appcrue extends \message_output {
         $appid = get_config('message_appcrue', 'appid');
         $data = new stdClass();
         $data->broadcast = false;
-        $data->devices_aliases = array($device_alias);
+        $data->devices_aliases = array($devicealias);
         $data->devices_ids = array();
         $data->segments = array();
         $target = new stdClass();
         $target->name = array();
         $target->values = array();
         $data->target_property = $target;
-        $data->title = $title; //get_site()->fullname;
-        $data->group_name = "Moodle message";
+        $data->title = $title;
+        $data->group_name = get_config('message_appcrue', 'group_name');
         $data->alert = $this->trim_alert_text($message);
         $data->url = $url;
         $data->inbox = true;
         $jsonnotificacion = json_encode($data);
-        $client= new curl();
+        $client = new curl();
         $client->setHeader(array('Content-Type:application/json', 'X-TwinPush-REST-API-Key-Creator:'.$apicreator));
         $options = [
             'CURLOPT_RETURNTRANSFER' => true,
@@ -172,7 +172,7 @@ class message_output_appcrue extends \message_output {
     /** Limit lenght of text to 240 characters */
     protected function trim_alert_text($text) {
         if (strlen($text) > 240) {
-            $trimmed = substr($text, 0, 240) . '...';
+            $trimmed = substr($text, 0, 240) . '…';
             return $trimmed;
         }
         return $text;
