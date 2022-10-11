@@ -28,8 +28,8 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'message_appcrue';
-$plugin->release = '0.2.10';
-$plugin->version = 2022090200;
+$plugin->release = '0.2.11';
+$plugin->version = 2022101100;
 $plugin->requires = 2015111600;
 $plugin->maturity = MATURITY_STABLE;
 $plugin->dependencies = [
