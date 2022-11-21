@@ -120,13 +120,16 @@ class message_output_appcrue extends \message_output {
         $data = new stdClass();
         $data->broadcast = false;
         $data->devices_aliases = array($device_alias);
-        $data->devices_ids = array();
-        $data->segments = array();
-        $target = new stdClass();
-        $target->name = array();
-        $target->values = array();
-        $data->target_property = $target;
-        $data->title = $title; //get_site()->fullname;
+        // Omit unnused tags.
+        if (false) {
+            $data->devices_ids = array();
+            $data->segments = array();
+            $target = new stdClass();
+            $target->name = array();
+            $target->values = array();
+            $data->target_property = $target;
+        }
+        $data->title = $title;
         $data->group_name = "Moodle message";
         $data->alert = $this->trim_alert_text($message);
         $data->url = $url;
