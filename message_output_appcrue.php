@@ -139,12 +139,15 @@ class message_output_appcrue extends \message_output {
         $data = new stdClass();
         $data->broadcast = false;
         $data->devices_aliases = array($devicealias);
-        $data->devices_ids = array();
-        $data->segments = array();
-        $target = new stdClass();
-        $target->name = array();
-        $target->values = array();
-        $data->target_property = $target;
+        // Omit unused tags.
+        if (false) {
+            $data->devices_ids = array();
+            $data->segments = array();
+            $target = new stdClass();
+            $target->name = array();
+            $target->values = array();
+            $data->target_property = $target;
+        }
         $data->title = $title;
         $data->group_name = get_config('message_appcrue', 'group_name');
         $data->alert = $this->trim_alert_text($message);
