@@ -120,7 +120,7 @@ class message_output_appcrue extends \message_output {
         $data = new stdClass();
         $data->broadcast = false;
         $data->devices_aliases = array($device_alias);
-        // Omit unnused tags.
+        // Omit optional unnused tags.
         if (false) {
             $data->devices_ids = array();
             $data->segments = array();
@@ -134,6 +134,10 @@ class message_output_appcrue extends \message_output {
         $data->alert = $this->trim_alert_text($message);
         $data->url = $url;
         $data->inbox = true;
+        // Ask to open the url in a webview and show a link in notification panel.
+        $data->custom_properties = new stdClass();
+        $data->custom_properties->target = 'webview';
+        $data->custom_properties->target_id = $url;
         $jsonnotificacion = json_encode($data);
         $client= new curl();
         $client->setHeader(array('Content-Type:application/json', 'X-TwinPush-REST-API-Key-Creator:'.$apicreator));
@@ -147,8 +151,9 @@ class message_output_appcrue extends \message_output {
         // Catch errors and log them.
         debugging("Push API Response:{$response}", DEBUG_DEVELOPER);
         // Check if any error occurred.
-        if ($client->get_errno()) {
-            debugging('Curl error: ' . $client->get_errno());
+        $info = $client->get_info();
+        if ($client->get_errno() || $info['http_code'] != 200) {
+            debugging('Curl error: ' . $client->get_errno(). ':' . $response , DEBUG_MINIMAL);
             return false;
         } else {
             return true;
