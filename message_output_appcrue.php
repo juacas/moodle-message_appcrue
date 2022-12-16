@@ -29,6 +29,7 @@ defined('MOODLE_INTERNAL') || die();
 
 require_once($CFG->dirroot.'/message/output/lib.php');
 require_once($CFG->dirroot.'/lib/filelib.php');
+require_once($CFG->dirroot.'/user/profile/lib.php');
 
 class message_output_appcrue extends \message_output {
 
@@ -64,12 +65,13 @@ class message_output_appcrue extends \message_output {
         $url = $eventdata->contexturl;
         $message  = $eventdata->fullmessage;
         $level = 3; // Default heading level.
+        $subject = $eventdata->subject;
+        $body = $eventdata->smallmessage;
         // Parse and format diferent message formats.
         if ($eventdata->component == 'mod_forum') {
             // Extract body.
             if (preg_match('/^-{50,}\n(.*)^-{50,}/sm', $message, $matches)) {
                 $body = $matches[1];
-                $subject = $eventdata->subject;
             }
             // Remove empty lines.
             $body = preg_replace('/^\r?\n/m', '', $body);
@@ -80,12 +82,11 @@ class message_output_appcrue extends \message_output {
 
         } else if ($eventdata->component == 'moodle' && $eventdata->name == 'instantmessage') {
             // Extract URL from body of fullmessage.
-            $re = '/((https:\/\/)[^\s.]+\.[\w][^\s]+)/m';
+            $re = '/((https?:\/\/)[^\s.]+\.[:\w][^\s]+)/m';
             if (preg_match($re, $eventdata->fullmessage, $matches)) {
                 $url = $matches[1];
             }
             // And add text from Subject.
-            $subject = $eventdata->subject;
             $body = $eventdata->smallmessage;
             // Process message.
             // If first line is a MARKDOWN heading use it as subject.
@@ -99,8 +100,26 @@ class message_output_appcrue extends \message_output {
             $body = "<p>" . preg_replace('/^\r?\n/m', '', $body) . "</p>";
         }
         $message = "<h{$level}>$subject</h{$level}>$body";
+        // Create target url.
+        $url = $this->get_target_url($url);
         // TODO: buffer volume messages in a table an send them in bulk.
         return $this->send_api_message($eventdata->userto, $subject, $body, $url);
+    }
+    /**
+     * If module local_appcrue is installed and configured uses autologin.php to navigate.
+     * @see local_appcrue plugin.
+     */
+    protected function get_target_url($url) {
+        global $CFG;
+        $urlpattern = get_config('message_appcrue', 'urlpattern');
+        if (empty($urlpattern)) {
+            return $url;
+        }
+        // Escape url.
+        $url = urlencode($url);
+        // Replace placeholders.
+        $url = str_replace(['{url}', '{siteurl}'], [$url, $CFG->wwwroot], $urlpattern);
+        return $url;
     }
     /**
      * Send the message using TwinPush.
@@ -110,8 +129,8 @@ class message_output_appcrue extends \message_output {
      * @return boolean false if message was not sent, true if sent.
      */
     public function send_api_message($user, $title, $message, $url='') {
-        $device_alias = $this->get_nick_name($user);
-        if ($device_alias == '') {
+        $devicealias = $this->get_nick_name($user);
+        if ($devicealias == '') {
             debugging("User {$user->id} has no device alias.", DEBUG_NORMAL);
             return true;
         }
@@ -119,8 +138,8 @@ class message_output_appcrue extends \message_output {
         $appid = get_config('message_appcrue', 'appid');
         $data = new stdClass();
         $data->broadcast = false;
-        $data->devices_aliases = array($device_alias);
-        // Omit optional unnused tags.
+        $data->devices_aliases = array($devicealias);
+        // Omit unused tags.
         if (false) {
             $data->devices_ids = array();
             $data->segments = array();
@@ -130,7 +149,7 @@ class message_output_appcrue extends \message_output {
             $data->target_property = $target;
         }
         $data->title = $title;
-        $data->group_name = "Moodle message";
+        $data->group_name = get_config('message_appcrue', 'group_name');
         $data->alert = $this->trim_alert_text($message);
         $data->url = $url;
         $data->inbox = true;
@@ -139,7 +158,7 @@ class message_output_appcrue extends \message_output {
         $data->custom_properties->target = 'webview';
         $data->custom_properties->target_id = $url;
         $jsonnotificacion = json_encode($data);
-        $client= new curl();
+        $client = new curl();
         $client->setHeader(array('Content-Type:application/json', 'X-TwinPush-REST-API-Key-Creator:'.$apicreator));
         $options = [
             'CURLOPT_RETURNTRANSFER' => true,
@@ -162,7 +181,7 @@ class message_output_appcrue extends \message_output {
     /** Limit lenght of text to 240 characters */
     protected function trim_alert_text($text) {
         if (strlen($text) > 240) {
-            $trimmed = substr($text, 0, 240) . '...';
+            $trimmed = substr($text, 0, 240) . '…';
             return $trimmed;
         }
         return $text;
