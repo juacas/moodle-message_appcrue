@@ -168,11 +168,12 @@ class message_output_appcrue extends \message_output {
             $jsonnotificacion,
             $options);
         // Catch errors and log them.
-        debugging("Push API Response:{$response}", DEBUG_DEVELOPER);
-        // Check if any error occurred.
-        $info = $client->get_info();
-        if ($client->get_errno() || $info['http_code'] != 200) {
-            debugging('Curl error: ' . $client->get_errno(). ':' . $response , DEBUG_MINIMAL);
+        $httpcode = $client->get_info()['http_code'];
+        debugging("Push API Response: {$httpcode}:{$response}", DEBUG_DEVELOPER);
+        
+        // Valid http_codes are 200 OK, 422 Unprocessable Entity (user not registered in twinpush).
+        if ($client->get_errno() || ($httpcode != 200 && $httpcode != 422) ) {
+            debugging('Curl error: ' . $client->get_errno(). ':' . $httpcode . ':' . $response , DEBUG_MINIMAL);
             return false;
         } else {
             return true;
