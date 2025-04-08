@@ -82,7 +82,7 @@ class message_output_appcrue extends \message_output {
 
         } else if ($eventdata->component == 'moodle' && $eventdata->name == 'instantmessage') {
             // Extract URL from body of fullmessage.
-            $re = '/((https?:\/\/)[^\s.]+\.[:\w][^\s]+)/m';
+            $re = '/((https?:\/\/)[^\s.]+\.[:\w][^\s"]+)/m';
             if (preg_match($re, $eventdata->fullmessage, $matches)) {
                 $url = $matches[1];
             }
@@ -99,11 +99,16 @@ class message_output_appcrue extends \message_output {
             // Best viewed in just one html paragraph.
             $body = "<p>" . preg_replace('/^\r?\n/m', '', $body) . "</p>";
         }
+
         $message = "<h{$level}>$subject</h{$level}>$body";
         // Create target url.
         $url = $this->get_target_url($url);
-        // TODO: buffer volume messages in a table an send them in bulk.
-        return $this->send_api_message($eventdata->userto, $subject, $body, $url);
+        if (get_config('message_appcrue', 'bufferedmode') == true) {
+            // Buffer volume messages in a table an send them in bulk.
+            return $this->buffer_message($eventdata->userto, $subject, $message, $url);
+        } else {
+            return $this->send_api_message([$eventdata->userto], $subject, $body, $url);
+        }
     }
     /**
      * If module local_appcrue is installed and configured uses autologin.php to navigate.
@@ -122,23 +127,78 @@ class message_output_appcrue extends \message_output {
         return $url;
     }
     /**
-     * Send the message using TwinPush.
-     * @param string $message The message contect to send to AppCrue.
+     * Buffer messages (by title, message, url hash) and recipients in separate tables.
      * @param \stdClass $user The Moodle user record that is being sent to.
+     * @param string $body The message content to send to push.
+     * @param string $title The title of the message.
+     * @param string $url url to see the details of the notification.
+     */
+    protected function buffer_message($user, $title, $body, $url) {
+        global $DB;
+        // Check if the message is already in the table.
+        $hash = hash('sha256', $title . $body . $url);
+        $message = $DB->get_record('message_appcrue_buffered', array('hash' => $hash));
+        if (!$message) {
+            // Insert message in the table.
+            $message = new stdClass();
+            $message->hash = $hash;
+            $message->subject = $title;
+            $message->body = $body;
+            $message->url = $url;
+            $message->created_at = time();
+            $message->id = $DB->insert_record('message_appcrue_buffered', $message);
+            if (!$message->id) {
+                debugging("Error inserting message {$message} in buffer.", DEBUG_DEVELOPER);
+                return false;
+            }
+        }
+        // Insert user in the table.
+        if (!$DB->insert_record('message_appcrue_recipients', array('recipient_id' => $user->id, 'message_id' => $message->id))) {
+            debugging("Error inserting user {$user->id} in buffer.", DEBUG_DEVELOPER);
+            return false;
+        }
+        return true;
+    }
+    /** 
+     * Create bunches of 1000 users and send them to AppCrue.
+     */
+    public function send_api_message($users, $title, $body, $url='') {
+         // Collect device aliases.
+         $devicealiases = [];
+         foreach ($users as $user) {
+             $alias = $this->get_nick_name($user);
+             if (empty($alias)) {
+                 debugging("User {$user->id} has no device alias.", DEBUG_NORMAL);
+                 continue;
+             }
+             $devicealiases[] = $alias;
+         }
+        // Split devicealiases in bunches of 1000.
+        $chunks = array_chunk($devicealiases, 1000);
+        foreach ($chunks as $chunk) {
+            $this->send_api_message_chunk($chunk, $title, $body, $url);
+        }
+        return true;
+    }
+    /**
+     * Send the message using TwinPush.
+     * @param array $devicealiases The list of device aliases to send the message to.
+     * @param string $title The title of the message.
+     * @param string $body The message contect to send to AppCrue.
      * @param string $url url to see the details of the notification.
      * @return boolean false if message was not sent, true if sent.
      */
-    public function send_api_message($user, $title, $message, $url='') {
-        $devicealias = $this->get_nick_name($user);
-        if ($devicealias == '') {
-            debugging("User {$user->id} has no device alias.", DEBUG_NORMAL);
-            return true;
+    public function send_api_message_chunk($devicealiases, $title, $body, $url='') {
+       
+        if (empty($devicealiases)) {
+            return false;
         }
+
         $apicreator = get_config('message_appcrue', 'apikey');
         $appid = get_config('message_appcrue', 'appid');
         $data = new stdClass();
         $data->broadcast = false;
-        $data->devices_aliases = array($devicealias);
+        $data->devices_aliases = $devicealiases;
         // Omit unused tags.
         if (false) {
             $data->devices_ids = array();
@@ -150,7 +210,7 @@ class message_output_appcrue extends \message_output {
         }
         $data->title = $title;
         $data->group_name = get_config('message_appcrue', 'group_name');
-        $data->alert = $this->trim_alert_text($message);
+        $data->alert = $this->trim_alert_text($body);
         $data->url = $url;
         $data->inbox = true;
         // Ask to open the url in a webview and show a link in notification panel.
@@ -167,8 +227,15 @@ class message_output_appcrue extends \message_output {
         $response = $client->post("https://appcrue.twinpush.com/api/v2/apps/{$appid}/notifications",
             $jsonnotificacion,
             $options);
-        // Catch errors and log them.
-        debugging("Push API Response:{$response}", DEBUG_DEVELOPER);
+        // Catch errors in response and log them.
+        $respjson = json_decode($response);
+        $aliasesstr = implode(', ', $devicealiases);
+        if (isset($respjson->errors)) {
+            debugging("Error sending message {$title} to {$aliasesstr}: {$respjson->errors}", DEBUG_NORMAL);
+            return false;
+        } else {
+            debugging("Message {$title} sent to {$aliasesstr}.", DEBUG_DEVELOPER);
+        }
         // Check if any error occurred.
         $info = $client->get_info();
         if ($client->get_errno() || $info['http_code'] != 200) {
