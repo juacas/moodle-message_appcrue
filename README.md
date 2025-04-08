@@ -3,7 +3,7 @@
 Enable Moodle to send messages through the notification service of AppCrue application using TwinPush API.
 ## What is AppCRUE? ##
 
-AppCRUE (https://tic.crue.org/app-crue/) is a mobile App develop by the CRUE (Conference of Rectors of Spanish Universities) and Santander Bank. It is used by 44 spanish universities and more than 150 000 students.
+AppCRUE (https://tic.crue.org/app-crue/) is a mobile App develop by the CRUE (Conference of Rectors of Spanish Universities) and Santander Bank. It is used by more than 44 spanish universities and more than 150 000 students.
 
 ## What is TwinPush? ##
 

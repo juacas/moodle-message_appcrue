@@ -27,7 +27,8 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-if ($ADMIN->fulltree) {
+// if ($ADMIN->fulltree) {
+if ($hassiteconfig) {
     // Collect user fields.
     $fields = get_user_fieldnames();
     global $CFG;
@@ -42,11 +43,18 @@ if ($ADMIN->fulltree) {
         $userfields["profile_field_{$field->shortname}"] = $field->name;
     }
 
+    // $settings = new admin_settingpage('message_appcrue', new lang_string('pluginname', 'message_appcrue'));
+    // $ADMIN->add('localplugins', $settings);
+
+    /**
+     * @var $settings admin_settingpage
+     */
     $settings->add(new admin_setting_configcheckbox(
         'message_appcrue/enable_push',
         get_string('enable_push', 'message_appcrue'), null,
         true
     ));
+    
     $settings->add(new admin_setting_configtext('message_appcrue/apikey', get_string('api_key', 'message_appcrue'),
                                                 get_string('api_key_help', 'message_appcrue'), '', PARAM_TEXT));
     $settings->add(new admin_setting_configtext('message_appcrue/appid', get_string('app_id', 'message_appcrue'),
@@ -68,4 +76,10 @@ if ($ADMIN->fulltree) {
     // Configure url pattern for generating the urls to the events.
     $settings->add(new admin_setting_configtext('message_appcrue/urlpattern', get_string('url_pattern', 'message_appcrue'),
     get_string('url_pattern_help', 'message_appcrue'), '', PARAM_RAW_TRIMMED, 100));
+    // Select if the messages are buffered.
+    $settings->add(new admin_setting_configcheckbox(
+        'message_appcrue/bufferedmode',
+        get_string('bufferedmode', 'message_appcrue'),
+        get_string('bufferedmode_help', 'message_appcrue'), 0
+    ));
 }

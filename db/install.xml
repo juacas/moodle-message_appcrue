@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<XMLDB PATH="message/output/appcrue/db" VERSION="20210909" COMMENT="XMLDB file for Moodle message output appcrue">
+    <TABLES>
+        <TABLE NAME="message_appcrue_buffered" COMMENT="Table for storing messages">
+            <FIELDS>
+                <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" UNSIGNED="true" AUTO_INCREMENT="true" COMMENT="Primary key for the message table"/>
+                <FIELD NAME="hash" TYPE="char" LENGTH="100" NOTNULL="true" COMMENT="Hash value for the message"/>
+                <FIELD NAME="body" TYPE="text" NOTNULL="true" COMMENT="Content of the message"/>
+                <FIELD NAME="subject" TYPE="text" NOTNULL="true" COMMENT="Subject of the message"/>
+                <FIELD NAME="url" TYPE="text" NOTNULL="true" COMMENT="URL for the message"/>
+                <FIELD NAME="created_at" TYPE="int" LENGTH="10" NOTNULL="true" UNSIGNED="true" COMMENT="Timestamp for message creation"/>
+            </FIELDS>
+            <KEYS>
+                <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+                <KEY NAME="hash" TYPE="unique" FIELDS="hash"/>
+            </KEYS>
+        </TABLE>
+        <TABLE NAME="message_appcrue_recipients" COMMENT="Table for storing message recipients">
+            <FIELDS>
+                <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" UNSIGNED="true" AUTO_INCREMENT="true" COMMENT="Primary key for the recipients table"/>
+                <FIELD NAME="message_id" TYPE="int" LENGTH="10" NOTNULL="true" UNSIGNED="true" COMMENT="Foreign key referencing the message table"/>
+                <FIELD NAME="recipient_id" TYPE="int" LENGTH="10" NOTNULL="true" UNSIGNED="true" COMMENT="ID of the recipient"/>
+            </FIELDS>
+            <KEYS>
+                <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+                <KEY NAME="message_id" TYPE="foreign" FIELDS="message_id" REFTABLE="message" REFFIELDS="id"/>
+            </KEYS>
+        </TABLE>
+    </TABLES>
+</XMLDB>
