@@ -163,21 +163,26 @@ class message_output_appcrue extends \message_output {
      * Create bunches of 1000 users and send them to AppCrue.
      */
     public function send_api_message($users, $title, $body, $url='') {
-         // Collect device aliases.
-         $devicealiases = [];
-         foreach ($users as $user) {
-             $alias = $this->get_nick_name($user);
-             if (empty($alias)) {
-                 debugging("User {$user->id} has no device alias.", DEBUG_NORMAL);
-                 continue;
-             }
-             $devicealiases[] = $alias;
-         }
-        // Split devicealiases in bunches of 1000.
-        $chunks = array_chunk($devicealiases, 1000);
+        global $DB;
+        // Split users in bunches of 1000.
+        $chunks = array_chunk($users, 1000);
         foreach ($chunks as $chunk) {
-            $this->send_api_message_chunk($chunk, $title, $body, $url);
+            // Load full user records for get_nick_name.
+            $ids= array_map(function($e){return $e->id;}, $chunk);
+            $users = $DB->get_records_list('user', 'id', $ids); 
+            // Collect device aliases.
+            $devicealiases = [];
+            foreach ($users as $user) {
+                $alias = $this->get_nick_name($user);
+                if (empty($alias)) {
+                    debugging("User {$user->id} has no device alias.", DEBUG_NORMAL, []);
+                    continue;
+                }
+                $devicealiases[] = $alias;
+            }
+            $this->send_api_message_chunk($devicealiases, $title, $body, $url);
         }
+        
         return true;
     }
     /**
@@ -199,15 +204,6 @@ class message_output_appcrue extends \message_output {
         $data = new stdClass();
         $data->broadcast = false;
         $data->devices_aliases = $devicealiases;
-        // Omit unused tags.
-        if (false) {
-            $data->devices_ids = array();
-            $data->segments = array();
-            $target = new stdClass();
-            $target->name = array();
-            $target->values = array();
-            $data->target_property = $target;
-        }
         $data->title = $title;
         $data->group_name = get_config('message_appcrue', 'group_name');
         $data->alert = $this->trim_alert_text($body);
@@ -234,7 +230,7 @@ class message_output_appcrue extends \message_output {
             debugging("Error sending message {$title} to {$aliasesstr}: {$respjson->errors}", DEBUG_NORMAL);
             return false;
         } else {
-            debugging("Message {$title} sent to {$aliasesstr}.", DEBUG_DEVELOPER);
+            debugging("Message {$title} sent to {$aliasesstr}.", DEBUG_DEVELOPER, []);
         }
         // Check if any error occurred.
         $info = $client->get_info();
@@ -259,6 +255,9 @@ class message_output_appcrue extends \message_output {
     public function get_nick_name($user) {
         $fieldname = get_config('message_appcrue', 'match_user_by');
         if (!isset($user->$fieldname)) {
+            // Load full user record.
+            $user = \core_user::get_user($user->id, '*', MUST_EXIST);
+            // Load profile data.
             profile_load_data($user);
         }
         return $user->$fieldname;

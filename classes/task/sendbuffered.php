@@ -84,7 +84,7 @@ class sendbuffered extends scheduled_task {
             }
             // Send the message.
             try {
-                $messageoutput->send_api_message($recipients, $message->subject, $message->body, $message->url);
+                $messageoutput->send_api_message( $recipients, $message->subject, $message->body, $message->url);
             } catch (moodle_exception $e) {
                 // Log the error.
                 debugging($e->getMessage(), DEBUG_DEVELOPER);
