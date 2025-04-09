@@ -1,4 +1,6 @@
 <?php
+
+use function PHPUnit\Framework\isEmpty;
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -107,7 +109,8 @@ class message_output_appcrue extends \message_output {
             // Buffer volume messages in a table an send them in bulk.
             return $this->buffer_message($eventdata->userto, $subject, $message, $url);
         } else {
-            return $this->send_api_message([$eventdata->userto], $subject, $body, $url);
+            $sent = $this->send_api_message([$eventdata->userto], $subject, $body, $url);
+            return isEmpty($sent) ? false : true;
         }
     }
     /**
@@ -161,9 +164,15 @@ class message_output_appcrue extends \message_output {
     }
     /** 
      * Create bunches of 1000 users and send them to AppCrue.
+     * @param array $users The list of users to send the message to.
+     * @param string $title The title of the message.
+     * @param string $body The message content to send to AppCrue.
+     * @param string $url url to see the details of the notification.
+     * @return array The list of userid=>alias that were sent the message [$user->id => $devicealias].
      */
     public function send_api_message($users, $title, $body, $url='') {
         global $DB;
+        $sent = [];
         // Split users in bunches of 1000.
         $chunks = array_chunk($users, 1000);
         foreach ($chunks as $chunk) {
@@ -178,12 +187,16 @@ class message_output_appcrue extends \message_output {
                     debugging("User {$user->id} has no device alias.", DEBUG_NORMAL, []);
                     continue;
                 }
-                $devicealiases[] = $alias;
+                $devicealiases[$user->id] = $alias;
             }
-            $this->send_api_message_chunk($devicealiases, $title, $body, $url);
+            if ($this->send_api_message_chunk($devicealiases, $title, $body, $url)) {
+                // Add to sent list preserving keys.
+                foreach ($devicealiases as $userid => $alias) {
+                    $sent[$userid] = $alias;
+                }
+            };
         }
-        
-        return true;
+        return $sent;
     }
     /**
      * Send the message using TwinPush.

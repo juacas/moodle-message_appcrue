@@ -82,17 +82,23 @@ class sendbuffered extends scheduled_task {
             if (empty($recipients)) {
                 continue;
             }
+            $sent = [];
             // Send the message.
             try {
-                $messageoutput->send_api_message( $recipients, $message->subject, $message->body, $message->url);
+                $sent = $messageoutput->send_api_message( $recipients, $message->subject, $message->body, $message->url);
             } catch (moodle_exception $e) {
                 // Log the error.
                 debugging($e->getMessage(), DEBUG_DEVELOPER);
                 continue;
             }
-            // Delete the message from the buffer.
-            $DB->delete_records('message_appcrue_recipients', ['message_id' => $message->id]);
-            $DB->delete_records('message_appcrue_buffered', ['id' => $message->id]);
+            // Delete the recipients of $message->id and in $sent array.
+            $userids = array_keys($sent);
+            list($insql, $params) = $DB->get_in_or_equal($userids);
+            // Delete the recipients from the database.
+            $DB->delete_records_select('message_appcrue_recipients', 'message_id = ? AND recipient_id ' . $insql, array_merge([$message->id], $params));
         }
+        // Delete message orphan messages with no recipients.
+        $sqlwhere = "id NOT IN (SELECT DISTINCT message_id FROM {message_appcrue_recipients})";
+        $DB->delete_records_select('message_appcrue_buffered', $sqlwhere);
     }
 }
