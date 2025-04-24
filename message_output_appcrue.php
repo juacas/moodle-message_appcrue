@@ -34,6 +34,8 @@ require_once($CFG->dirroot.'/lib/filelib.php');
 require_once($CFG->dirroot.'/user/profile/lib.php');
 
 class message_output_appcrue extends \message_output {
+    // Use the logging trait to get some nice, juicy, logging.
+    use \core\task\logging_trait;
 
     /**
      * Processes the message and sends a notification via appcrue
@@ -109,8 +111,9 @@ class message_output_appcrue extends \message_output {
             // Buffer volume messages in a table an send them in bulk.
             return $this->buffer_message($eventdata->userto, $subject, $message, $url);
         } else {
-            $sent = $this->send_api_message([$eventdata->userto], $subject, $body, $url);
-            return isEmpty($sent) ? false : true;
+            $errors = $this->send_api_message([$eventdata->userto], $subject, $body, $url);
+            // Return true if the message was sent to all recipients.
+            return empty($errors);
         }
     }
     /**
@@ -168,11 +171,12 @@ class message_output_appcrue extends \message_output {
      * @param string $title The title of the message.
      * @param string $body The message content to send to AppCrue.
      * @param string $url url to see the details of the notification.
-     * @return array The list of userid=>alias that were sent the message [$user->id => $devicealias].
+     * @return array The list of userid=>alias that errored while sending the message [$user->id => $devicealias].
      */
-    public function send_api_message($users, $title, $body, $url='') {
+    public function send_api_message($users, $title, $body, string $url='') {
         global $DB;
-        $sent = [];
+        // Accumulate errors.
+        $errors = [];
         // Split users in bunches of 1000.
         $chunks = array_chunk($users, 1000);
         foreach ($chunks as $chunk) {
@@ -184,39 +188,41 @@ class message_output_appcrue extends \message_output {
             foreach ($users as $user) {
                 $alias = $this->get_nick_name($user);
                 if (empty($alias)) {
-                    debugging("User {$user->id} has no device alias.", DEBUG_NORMAL, []);
+                    $msg = "User {$user->id} has no device alias.";
+                    $this->log_no_ajax($msg);
                     continue;
                 }
                 $devicealiases[$user->id] = $alias;
             }
-            if ($this->send_api_message_chunk($devicealiases, $title, $body, $url)) {
-                // Add to sent list preserving keys.
-                foreach ($devicealiases as $userid => $alias) {
-                    $sent[$userid] = $alias;
-                }
-            };
+            $errored = $this->send_api_message_chunk($devicealiases, $title, $body, $url);
+          
+            // Add to error list preserving keys.
+            foreach ($errored as $userid => $alias) {
+                $errors[$userid] = $alias;
+            }
+           
         }
-        return $sent;
+        return $errors;
     }
     /**
      * Send the message using TwinPush.
-     * @param array $devicealiases The list of device aliases to send the message to.
+     * @param array $devicealiases The list of device aliases to send the message to. userid=> devicealias.
      * @param string $title The title of the message.
      * @param string $body The message contect to send to AppCrue.
      * @param string $url url to see the details of the notification.
-     * @return boolean false if message was not sent, true if sent.
+     * @return array userid=>aliases not sent.
      */
     public function send_api_message_chunk($devicealiases, $title, $body, $url='') {
        
         if (empty($devicealiases)) {
-            return false;
+            return [];
         }
 
         $apicreator = get_config('message_appcrue', 'apikey');
         $appid = get_config('message_appcrue', 'appid');
         $data = new stdClass();
         $data->broadcast = false;
-        $data->devices_aliases = $devicealiases;
+        $data->devices_aliases = array_values($devicealiases);
         $data->title = $title;
         $data->group_name = get_config('message_appcrue', 'group_name');
         $data->alert = $this->trim_alert_text($body);
@@ -240,18 +246,18 @@ class message_output_appcrue extends \message_output {
         $respjson = json_decode($response);
         $aliasesstr = implode(', ', $devicealiases);
         if (isset($respjson->errors)) {
-            debugging("Error sending message {$title} to {$aliasesstr}: {$respjson->errors}", DEBUG_NORMAL);
-            return false;
+            $this->log_no_ajax("Error sending message {$title} to {$aliasesstr}: {$response}");
+            return $devicealiases;
         } else {
-            debugging("Message {$title} sent to {$aliasesstr}.", DEBUG_DEVELOPER, []);
+            $this->log_no_ajax("Message {$title} sent to {$aliasesstr}");
         }
         // Check if any error occurred.
         $info = $client->get_info();
         if ($client->get_errno() || $info['http_code'] != 200) {
             debugging('Curl error: ' . $client->get_errno(). ':' . $response , DEBUG_MINIMAL);
-            return false;
+            return $devicealiases;
         } else {
-            return true;
+            return [];
         }
     }
     /** Limit lenght of text to 240 characters */
@@ -268,8 +274,6 @@ class message_output_appcrue extends \message_output {
     public function get_nick_name($user) {
         $fieldname = get_config('message_appcrue', 'match_user_by');
         if (!isset($user->$fieldname)) {
-            // Load full user record.
-            $user = \core_user::get_user($user->id, '*', MUST_EXIST);
             // Load profile data.
             profile_load_data($user);
         }
@@ -335,5 +339,10 @@ class message_output_appcrue extends \message_output {
             }
         }
         return false;
+    }
+    protected function log_no_ajax($message) {
+        if (!defined('AJAX_SCRIPT')) {
+            $this->log($message);
+        }
     }
 }

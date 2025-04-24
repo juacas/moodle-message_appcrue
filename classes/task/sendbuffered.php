@@ -40,6 +40,8 @@ require_once(__DIR__ . '/../../message_output_appcrue.php');
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class sendbuffered extends scheduled_task {
+    // Use the logging trait to get some nice, juicy, logging.
+    use \core\task\logging_trait;
     /**
      * get_name
      * @return string
@@ -72,6 +74,8 @@ class sendbuffered extends scheduled_task {
         }
         // Get appcrue message output.
         $messageoutput = new \message_output_appcrue();
+        // Accumulate errored messages.
+        $globalerrored = [];
         // Iterate.
         foreach ($messages as $message) {
             // Get the message.
@@ -82,23 +86,43 @@ class sendbuffered extends scheduled_task {
             if (empty($recipients)) {
                 continue;
             }
-            $sent = [];
+            $errored = [];
             // Send the message.
             try {
-                $sent = $messageoutput->send_api_message( $recipients, $message->subject, $message->body, $message->url);
+                $errored = $messageoutput->send_api_message( $recipients, $message->subject, $message->body, $message->url);
             } catch (moodle_exception $e) {
                 // Log the error.
                 debugging($e->getMessage(), DEBUG_DEVELOPER);
                 continue;
             }
             // Delete the recipients of $message->id and in $sent array.
-            $userids = array_keys($sent);
-            list($insql, $params) = $DB->get_in_or_equal($userids);
-            // Delete the recipients from the database.
-            $DB->delete_records_select('message_appcrue_recipients', 'message_id = ? AND recipient_id ' . $insql, array_merge([$message->id], $params));
+            if (empty($errored)) {
+                // If there are no errors, delete the recipients.
+                $DB->delete_records('message_appcrue_recipients', ['message_id' => $message->id]);
+            } else {
+                $globalerrored[$message->id] = $errored;
+                $errorids = array_keys($errored);
+                $this->log_no_ajax('Message ' . $message->id . ' not sent to users: ' . implode(',', $errorids));
+                [$insql, $params] = $DB->get_in_or_equal($errorids, SQL_PARAMS_QM, null, false);
+                // Delete all recipients from the buffer table except errored users.
+                $DB->delete_records_select('message_appcrue_recipients', 'message_id = ? AND recipient_id ' . $insql, array_merge([$message->id], $params));
+            }
         }
         // Delete message orphan messages with no recipients.
         $sqlwhere = "id NOT IN (SELECT DISTINCT message_id FROM {message_appcrue_recipients})";
         $DB->delete_records_select('message_appcrue_buffered', $sqlwhere);
+        if (!empty($globalerrored)) {
+            throw new moodle_exception('sendbufferedtaskerror', 'message_appcrue', '', json_encode($globalerrored));
+        }
     }
+    /**
+     * Only log if not in AJAX mode.
+     * @param mixed $message
+     * @return void
+     */
+    protected function log_no_ajax($message) {
+        if (!defined('AJAX_SCRIPT')) {
+            $this->log($message);
+        }
+    } // log_no_ajax
 }

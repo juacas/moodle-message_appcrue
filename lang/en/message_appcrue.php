@@ -44,3 +44,4 @@ $string['enable_push'] = 'Enable push message service';
 $string['url_pattern_help'] = 'URL pattern for push notifications. The following variables are available: {url}:the message\'s url, {siteurl}:base url of the server. Example: {siteurl}/local/appcrue/autologin.php?urltogo={url}&fallback=continue&<bearer>';
 $string['url_pattern'] = 'URL pattern for the event\'s links.';
 $string['sendbufferedtask'] = 'Send buffered messages';
+$string['sendbufferedtaskerror'] = 'Some recipients were not reached for messages: {$a}';
