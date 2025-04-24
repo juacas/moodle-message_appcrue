@@ -188,8 +188,7 @@ class message_output_appcrue extends \message_output {
             foreach ($users as $user) {
                 $alias = $this->get_nick_name($user);
                 if (empty($alias)) {
-                    $msg = "User {$user->id} has no device alias.";
-                    $this->log_no_ajax($msg);
+                    $this->log_no_ajax("User {$user->id} has no device alias.");
                     continue;
                 }
                 $devicealiases[$user->id] = $alias;
@@ -246,10 +245,10 @@ class message_output_appcrue extends \message_output {
         $respjson = json_decode($response);
         $aliasesstr = implode(', ', $devicealiases);
         if (isset($respjson->errors)) {
-            $this->log_no_ajax("Error sending message {$title} to {$aliasesstr}: {$response}");
+            $this->log_no_ajax("Error sending message '{$title}' to {$aliasesstr}: {$response}");
             return $devicealiases;
         } else {
-            $this->log_no_ajax("Message {$title} sent to {$aliasesstr}");
+            $this->log_no_ajax("Message '{$title}' sent to {$aliasesstr}");
         }
         // Check if any error occurred.
         $info = $client->get_info();
@@ -341,7 +340,7 @@ class message_output_appcrue extends \message_output {
         return false;
     }
     protected function log_no_ajax($message) {
-        if (!defined('AJAX_SCRIPT')) {
+        if (!defined('AJAX_SCRIPT') || !AJAX_SCRIPT) {
             $this->log($message);
         }
     }

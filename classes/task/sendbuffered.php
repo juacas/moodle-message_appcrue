@@ -42,6 +42,8 @@ require_once(__DIR__ . '/../../message_output_appcrue.php');
 class sendbuffered extends scheduled_task {
     // Use the logging trait to get some nice, juicy, logging.
     use \core\task\logging_trait;
+    // Use the logging trait to get some nice, juicy, logging.
+    use \core\task\logging_trait;
     /**
      * get_name
      * @return string
@@ -108,7 +110,7 @@ class sendbuffered extends scheduled_task {
                 $DB->delete_records_select('message_appcrue_recipients', 'message_id = ? AND recipient_id ' . $insql, array_merge([$message->id], $params));
             }
         }
-        // Delete message orphan messages with no recipients.
+        // Delete orphan messages with no recipients.
         $sqlwhere = "id NOT IN (SELECT DISTINCT message_id FROM {message_appcrue_recipients})";
         $DB->delete_records_select('message_appcrue_buffered', $sqlwhere);
         if (!empty($globalerrored)) {
@@ -121,7 +123,7 @@ class sendbuffered extends scheduled_task {
      * @return void
      */
     protected function log_no_ajax($message) {
-        if (!defined('AJAX_SCRIPT')) {
+        if (!defined('AJAX_SCRIPT') || !AJAX_SCRIPT) {
             $this->log($message);
         }
     } // log_no_ajax
