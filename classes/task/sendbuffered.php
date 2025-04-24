@@ -42,8 +42,6 @@ require_once(__DIR__ . '/../../message_output_appcrue.php');
 class sendbuffered extends scheduled_task {
     // Use the logging trait to get some nice, juicy, logging.
     use \core\task\logging_trait;
-    // Use the logging trait to get some nice, juicy, logging.
-    use \core\task\logging_trait;
     /**
      * get_name
      * @return string
