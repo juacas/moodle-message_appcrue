@@ -61,19 +61,17 @@ class sendbuffered extends scheduled_task {
      */
     public function execute() {
         global $DB;
-        // If buffering is disabled, return.
-        if (!get_config('message_appcrue', 'bufferedmode')) {
-            return;
-        }
-        // If the task is not enabled, return.
+        // Get appcrue message output.
+        $messageoutput = new \message_output_appcrue();
         // Get the buffered messages.
-        $messages = $DB->get_records('message_appcrue_buffered', [], 'created_at ASC', '*', 0, 100);
+        $messages = $DB->get_records('message_appcrue_buffered', 
+                        ['status' => \message_output_appcrue::MESSAGE_READY],
+                        'created_at ASC', '*',
+                        0, 500);
         // If there are no messages, return.
         if (empty($messages)) {
             return;
         }
-        // Get appcrue message output.
-        $messageoutput = new \message_output_appcrue();
         // Accumulate errored messages.
         $globalerrored = [];
         // Iterate.
@@ -106,6 +104,8 @@ class sendbuffered extends scheduled_task {
                 [$insql, $params] = $DB->get_in_or_equal($errorids, SQL_PARAMS_QM, null, false);
                 // Delete all recipients from the buffer table except errored users.
                 $DB->delete_records_select('message_appcrue_recipients', 'message_id = ? AND recipient_id ' . $insql, array_merge([$message->id], $params));
+                // Mark the message as errored.
+                $DB->set_field('message_appcrue_buffered', 'status', \message_output_appcrue::MESSAGE_FAILED, ['id' => $message->id]);
             }
         }
         // Delete orphan messages with no recipients.

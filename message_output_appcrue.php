@@ -1,6 +1,4 @@
 <?php
-
-use function PHPUnit\Framework\isEmpty;
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -36,7 +34,8 @@ require_once($CFG->dirroot.'/user/profile/lib.php');
 class message_output_appcrue extends \message_output {
     // Use the logging trait to get some nice, juicy, logging.
     use \core\task\logging_trait;
-
+    public const MESSAGE_READY = 0;
+    public const MESSAGE_FAILED = 1;
     /**
      * Processes the message and sends a notification via appcrue
      *
@@ -67,6 +66,10 @@ class message_output_appcrue extends \message_output {
             return true;
         }
         $url = $eventdata->contexturl;
+        // Defaults url to Dashboard.
+        if (empty($url)) {
+            $url = new moodle_url('/my');
+        }
         $message  = $eventdata->fullmessage;
         $level = 3; // Default heading level.
         $subject = $eventdata->subject;
@@ -109,11 +112,21 @@ class message_output_appcrue extends \message_output {
         $url = $this->get_target_url($url);
         if (get_config('message_appcrue', 'bufferedmode') == true) {
             // Buffer volume messages in a table an send them in bulk.
-            return $this->buffer_message($eventdata->userto, $subject, $message, $url);
+            return $this->buffer_message($eventdata->userto, $subject, $message, $url, self::MESSAGE_READY);
         } else {
+            // Send message to pushAPI.
             $errors = $this->send_api_message([$eventdata->userto], $subject, $body, $url);
-            // Return true if the message was sent to all recipients.
-            return empty($errors);
+            // Buffer message if any error occurred.
+            foreach ($errors as $userid => $devicealias) {
+                $user = new stdClass();
+                $user->id = $userid;
+                if (!$this->buffer_message($user, $subject, $message, $url, self::MESSAGE_FAILED)) {
+                    debugging("Error buffering message " . json_encode($message) . " for user {$user->id}.", DEBUG_DEVELOPER);
+                    return false;
+                }
+            }
+            $this->log_no_ajax("Message in error '{$subject}' buffered for users: " . implode(', ', array_keys($errors)));
+            return true;
         }
     }
     /**
@@ -139,10 +152,10 @@ class message_output_appcrue extends \message_output {
      * @param string $title The title of the message.
      * @param string $url url to see the details of the notification.
      */
-    protected function buffer_message($user, $title, $body, $url) {
+    protected function buffer_message($user, $title, $body, $url, $status = MESSAGE_READY) {
         global $DB;
         // Check if the message is already in the table.
-        $hash = hash('sha256', $title . $body . $url);
+        $hash = hash('sha256', $title . $body . $url . $status);
         $message = $DB->get_record('message_appcrue_buffered', array('hash' => $hash));
         if (!$message) {
             // Insert message in the table.
@@ -152,11 +165,18 @@ class message_output_appcrue extends \message_output {
             $message->body = $body;
             $message->url = $url;
             $message->created_at = time();
+            $message->status = $status;
             $message->id = $DB->insert_record('message_appcrue_buffered', $message);
             if (!$message->id) {
-                debugging("Error inserting message {$message} in buffer.", DEBUG_DEVELOPER);
+                debugging("Error inserting message " . json_encode($message) . " in buffer.", DEBUG_DEVELOPER);
                 return false;
             }
+        }
+        // Check if the user is already in the table.
+        $recipient = $DB->get_record('message_appcrue_recipients', array('recipient_id' => $user->id, 'message_id' => $message->id));
+        if ($recipient) {
+            // User already in the table.
+            return true;
         }
         // Insert user in the table.
         if (!$DB->insert_record('message_appcrue_recipients', array('recipient_id' => $user->id, 'message_id' => $message->id))) {
@@ -173,7 +193,7 @@ class message_output_appcrue extends \message_output {
      * @param string $url url to see the details of the notification.
      * @return array The list of userid=>alias that errored while sending the message [$user->id => $devicealias].
      */
-    public function send_api_message($users, $title, $body, string $url='') {
+    public function send_api_message($users, $title, $body, $url='') {
         global $DB;
         // Accumulate errors.
         $errors = [];
@@ -225,12 +245,13 @@ class message_output_appcrue extends \message_output {
         $data->title = $title;
         $data->group_name = get_config('message_appcrue', 'group_name');
         $data->alert = $this->trim_alert_text($body);
-        $data->url = $url;
         $data->inbox = true;
         // Ask to open the url in a webview and show a link in notification panel.
+        $data->url = $url;
         $data->custom_properties = new stdClass();
         $data->custom_properties->target = 'webview';
         $data->custom_properties->target_id = $url;
+
         $jsonnotificacion = json_encode($data);
         $client = new curl();
         $client->setHeader(array('Content-Type:application/json', 'X-TwinPush-REST-API-Key-Creator:'.$apicreator));
