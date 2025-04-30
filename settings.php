@@ -82,4 +82,16 @@ if ($hassiteconfig) {
         get_string('bufferedmode', 'message_appcrue'),
         get_string('bufferedmode_help', 'message_appcrue'), 0
     ));
+    // Preserve undeliverable messages in buffered mode.
+    $settings->add(new admin_setting_configcheckbox(
+        'message_appcrue/preserveundeliverable',
+        get_string('preserveundeliverable', 'message_appcrue'),
+        get_string('preserveundeliverable_help', 'message_appcrue'), 0
+    ));
+    $settings->hide_if(
+        'message_appcrue/preserveundeliverable',
+        'message_appcrue/bufferedmode',
+        'eq',
+        0
+    );
 }

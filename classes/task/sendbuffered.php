@@ -74,6 +74,7 @@ class sendbuffered extends scheduled_task {
         }
         // Accumulate errored messages.
         $globalerrored = [];
+        $errorcondition = [];
         // Iterate.
         foreach ($messages as $message) {
             // Get the message.
@@ -84,35 +85,38 @@ class sendbuffered extends scheduled_task {
             if (empty($recipients)) {
                 continue;
             }
-            $errored = [];
-            // Send the message.
+            $unreachable = [];
             try {
-                $errored = $messageoutput->send_api_message( $recipients, $message->subject, $message->body, $message->url);
+                // Send the message.
+                $unreachable = $messageoutput->send_api_message( $recipients, $message->subject, $message->body, $message->url);
             } catch (moodle_exception $e) {
-                // Log the error.
+                // Error sending the message.
+                // Log the error and leave untouched recipients in buffer for retrying.
                 debugging($e->getMessage(), DEBUG_DEVELOPER);
+                $errorcondition[$message->id] = $e->getMessage();
                 continue;
             }
-            // Delete the recipients of $message->id and in $sent array.
-            if (empty($errored)) {
-                // If there are no errors, delete the recipients.
+            // If there are no unreachable recipients or want clear buffer, delete all the recipients.
+            if (empty($unreachable) || get_config('message_appcrue', 'preserveundeliverable') == false) {
+                // Delete all the recipients of $message fron the buffer.
                 $DB->delete_records('message_appcrue_recipients', ['message_id' => $message->id]);
-            } else {
-                $globalerrored[$message->id] = $errored;
-                $errorids = array_keys($errored);
+            } else { 
+                // Keep the unreachable recipients in the buffer.
+                $globalerrored[$message->id] = $unreachable;
+                $errorids = array_keys($unreachable);
                 $this->log_no_ajax('Message ' . $message->id . ' not sent to users: ' . implode(',', $errorids));
                 [$insql, $params] = $DB->get_in_or_equal($errorids, SQL_PARAMS_QM, null, false);
-                // Delete all recipients from the buffer table except errored users.
+                // Delete all recipients from the buffer table *except errored users*.
                 $DB->delete_records_select('message_appcrue_recipients', 'message_id = ? AND recipient_id ' . $insql, array_merge([$message->id], $params));
-                // Mark the message as errored.
+                // Mark the message as failed.
                 $DB->set_field('message_appcrue_buffered', 'status', \message_output_appcrue::MESSAGE_FAILED, ['id' => $message->id]);
             }
         }
-        // Delete orphan messages with no recipients.
+        // Delete fully sent messages (with no pending recipients).
         $sqlwhere = "id NOT IN (SELECT DISTINCT message_id FROM {message_appcrue_recipients})";
         $DB->delete_records_select('message_appcrue_buffered', $sqlwhere);
-        if (!empty($globalerrored)) {
-            throw new moodle_exception('sendbufferedtaskerror', 'message_appcrue', '', json_encode($globalerrored));
+        if (!empty($errorcondition)) {
+            throw new moodle_exception('sendbufferedtaskerror', 'message_appcrue', '', json_encode($errorcondition));
         }
     }
     /**

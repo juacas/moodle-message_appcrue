@@ -62,22 +62,48 @@ class message_output_appcrue extends \message_output {
             debugging('Appcrue endpoint is not configured in settings.', DEBUG_NORMAL);
             return true;
         }
-        if ($this->skip_message($eventdata)) {
+        if ($this->should_skip_message($eventdata)) {
             return true;
         }
-        $url = $eventdata->contexturl;
-        // Defaults url to Dashboard.
-        if (empty($url)) {
-            $url = new moodle_url('/my');
+       
+        $message = $this->build_message($eventdata);
+
+        if (get_config('message_appcrue', 'bufferedmode') == true) {
+            // Buffer volume messages in a table an send them in bulk.
+            return $this->buffer_message($eventdata->userto, $message->subject, $message->body, $message->url, self::MESSAGE_READY);
+        } else {
+            // Send message to pushAPI.
+            $errors = $this->send_api_message([$eventdata->userto], $message->subject, $message->body, $message->url);
+            // Buffer message if any error occurred.
+            foreach ($errors as $userid => $devicealias) {
+                $user = new stdClass();
+                $user->id = $userid;
+                if (!$this->buffer_message($user, $message->subject, $message->body, $message->url, self::MESSAGE_FAILED)) {
+                    debugging("Error buffering message " . json_encode($message) . " for user {$user->id}.", DEBUG_DEVELOPER);
+                    return false;
+                }
+            }
+            $this->log_no_ajax("Message in error '{$message->subject}' buffered for users: " . implode(', ', array_keys($errors)));
+            return true;
         }
-        $message  = $eventdata->fullmessage;
+    }
+    /**
+     * Format the message body.
+     * @param stdClass $eventdata The message to format.
+     * @return stdClass The formatted  message.
+     */
+    protected function build_message($eventdata) {
+        $message = new \stdClass();
+        $message->body = $eventdata->fullmessage;
         $level = 3; // Default heading level.
-        $subject = $eventdata->subject;
-        $body = $eventdata->smallmessage;
+
+        $url = $eventdata->contexturl;
+       
+        $message->subject = $eventdata->subject;
         // Parse and format diferent message formats.
         if ($eventdata->component == 'mod_forum') {
             // Extract body.
-            if (preg_match('/^-{50,}\n(.*)^-{50,}/sm', $message, $matches)) {
+            if (preg_match('/^-{50,}\n(.*)^-{50,}/sm', $message->body, $matches)) {
                 $body = $matches[1];
             }
             // Remove empty lines.
@@ -106,28 +132,15 @@ class message_output_appcrue extends \message_output {
             // Best viewed in just one html paragraph.
             $body = "<p>" . preg_replace('/^\r?\n/m', '', $body) . "</p>";
         }
-
-        $message = "<h{$level}>$subject</h{$level}>$body";
-        // Create target url.
-        $url = $this->get_target_url($url);
-        if (get_config('message_appcrue', 'bufferedmode') == true) {
-            // Buffer volume messages in a table an send them in bulk.
-            return $this->buffer_message($eventdata->userto, $subject, $message, $url, self::MESSAGE_READY);
-        } else {
-            // Send message to pushAPI.
-            $errors = $this->send_api_message([$eventdata->userto], $subject, $body, $url);
-            // Buffer message if any error occurred.
-            foreach ($errors as $userid => $devicealias) {
-                $user = new stdClass();
-                $user->id = $userid;
-                if (!$this->buffer_message($user, $subject, $message, $url, self::MESSAGE_FAILED)) {
-                    debugging("Error buffering message " . json_encode($message) . " for user {$user->id}.", DEBUG_DEVELOPER);
-                    return false;
-                }
-            }
-            $this->log_no_ajax("Message in error '{$subject}' buffered for users: " . implode(', ', array_keys($errors)));
-            return true;
+         // Defaults url to Dashboard.
+        if (empty($url)) {
+            $url = new moodle_url('/my');
         }
+
+        $message->body = "<h{$level}>$message->subject</h{$level}>$body";
+        // Create target url.
+        $message->url = $this->get_target_url($url);
+        return $message;
     }
     /**
      * If module local_appcrue is installed and configured uses autologin.php to navigate.
@@ -192,6 +205,7 @@ class message_output_appcrue extends \message_output {
      * @param string $body The message content to send to AppCrue.
      * @param string $url url to see the details of the notification.
      * @return array The list of userid=>alias that errored while sending the message [$user->id => $devicealias].
+     * @throws moodle_exception if API can't be reached.
      */
     public function send_api_message($users, $title, $body, $url='') {
         global $DB;
@@ -230,6 +244,7 @@ class message_output_appcrue extends \message_output {
      * @param string $body The message contect to send to AppCrue.
      * @param string $url url to see the details of the notification.
      * @return array userid=>aliases not sent.
+     * @throws moodle_exception if API can't be reached.
      */
     public function send_api_message_chunk($devicealiases, $title, $body, $url='') {
        
@@ -259,13 +274,17 @@ class message_output_appcrue extends \message_output {
             'CURLOPT_RETURNTRANSFER' => true,
             'CURLOPT_CONNECTTIMEOUT' => 5 // JPC: Limit impact on other scheduled tasks.
         ];
-        $response = $client->post("https://appcrue.twinpush.com/api/v2/apps/{$appid}/notifications",
+        $apiurl = 'https://appcrue.twinpush.com/api/v2/apps/'.$appid.'/notifications';
+        $response = $client->post($apiurl,
             $jsonnotificacion,
             $options);
         // Catch errors in response and log them.
         $respjson = json_decode($response);
         $aliasesstr = implode(', ', $devicealiases);
         if (isset($respjson->errors)) {
+            if ($respjson->errors->type == 'AppNotFound') {
+                throw new moodle_exception('apicallerror', 'message_appcrue', '', 'App not found. Check App ID.');
+            }
             $this->log_no_ajax("Error sending message '{$title}' to {$aliasesstr}: {$response}");
             return $devicealiases;
         } else {
@@ -275,7 +294,7 @@ class message_output_appcrue extends \message_output {
         $info = $client->get_info();
         if ($client->get_errno() || $info['http_code'] != 200) {
             debugging('Curl error: ' . $client->get_errno(). ':' . $response , DEBUG_MINIMAL);
-            return $devicealiases;
+            throw new moodle_exception('apicallerror', 'message_appcrue', '', $client->get_error());
         } else {
             return [];
         }
@@ -343,7 +362,7 @@ class message_output_appcrue extends \message_output {
      * @param stdClass $eventdata the event data submitted by the message sender
      * @return boolean should be skiped?
      */
-    protected function skip_message($eventdata) {
+    protected function should_skip_message($eventdata) {
         global $DB;
         // If configured, skip forum messages not from "news" special forum.
         if (get_config('message_appcrue', 'onlynewsforum') == true &&
