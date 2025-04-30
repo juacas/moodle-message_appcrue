@@ -28,6 +28,7 @@ The notifications can be enabled/disabled/forced using Moodle's core notificatio
 - The TwinPush API does not report recipient errors unless all the recipients are invalid. This means that if a message is sent to 10 users and only 1 of them is valid, the API will return a success response. This plugin treat the message as correctly sent.
 - If all the recipients are invalid, the plugin will mark the message as failed in the Moodle database. The message will not be sent to TwinPush API and the plugin will not retry to send it again. An error message will be shown in the scheduler task log.
 - If an admin wants to retry failed messages, i.e. because the TwinPush API was down or the users has corrected their profile, the admin can do it resetting the status of the message to 0 in the Moodle database. There is no user interface for this, still.
+- The admin can bypass the retention of failed messages in settings.
 
  ## Privacy ##
 
