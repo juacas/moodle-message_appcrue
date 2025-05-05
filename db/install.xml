@@ -10,6 +10,7 @@
                 <FIELD NAME="url" TYPE="text" NOTNULL="true" COMMENT="URL for the message"/>
                 <FIELD NAME="created_at" TYPE="int" LENGTH="10" NOTNULL="true" UNSIGNED="true" COMMENT="Timestamp for message creation"/>
                 <FIELD NAME="status" TYPE="int" LENGTH="1" NOTNULL="true" UNSIGNED="true" DEFAULT="0" COMMENT="Status of the message (0: pending, 1: failed)"/>
+            </FIELDS>
             <KEYS>
                 <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
                 <KEY NAME="hash" TYPE="unique" FIELDS="hash"/>

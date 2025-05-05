@@ -165,7 +165,7 @@ class message_output_appcrue extends \message_output {
      * @param string $title The title of the message.
      * @param string $url url to see the details of the notification.
      */
-    protected function buffer_message($user, $title, $body, $url, $status = MESSAGE_READY) {
+    protected function buffer_message($user, $title, $body, $url, $status = self::MESSAGE_READY) {
         global $DB;
         // Check if the message is already in the table.
         $hash = hash('sha256', $title . $body . $url . $status);
@@ -228,7 +228,7 @@ class message_output_appcrue extends \message_output {
                 $devicealiases[$user->id] = $alias;
             }
             $errored = $this->send_api_message_chunk($devicealiases, $title, $body, $url);
-          
+
             // Add to error list preserving keys.
             foreach ($errored as $userid => $alias) {
                 $errors[$userid] = $alias;
