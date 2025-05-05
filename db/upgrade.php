@@ -39,10 +39,17 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-defined('MOODLE_INTERNAL') || die();
-
+/**
+ * Processes the plugin upgrades.
+ *
+ * @param int $oldversion old plugin version.
+ * @return true
+ * @throws ddl_exception
+ * @throws downgrade_exception
+ * @throws upgrade_exception
+ */
 function xmldb_message_appcrue_upgrade($oldversion) {
-    global $CFG, $DB;
+    global $DB;
 
     $dbman = $DB->get_manager(); // Loads ddl manager and xmldb classes.
 
@@ -52,7 +59,7 @@ function xmldb_message_appcrue_upgrade($oldversion) {
     // Automatically generated Moodle v4.0.0 release upgrade line.
     // Put any upgrade step following this.
     if ($oldversion < 2025040802) {
-  
+
         if (!$dbman->table_exists('message_appcrue_buffered')) {
             $table = new xmldb_table('message_appcrue_buffered');
             $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
@@ -63,7 +70,7 @@ function xmldb_message_appcrue_upgrade($oldversion) {
             $table->add_field('created_at', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
             $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
             $table->add_key('hash', XMLDB_KEY_UNIQUE, ['hash']);
-    
+
             $dbman->create_table($table);
         }
         // Create table for recipients.
@@ -73,11 +80,11 @@ function xmldb_message_appcrue_upgrade($oldversion) {
             $table->add_field('message_id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
             $table->add_field('recipient_id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
             $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
-            $table->add_key('message_id', XMLDB_KEY_FOREIGN, ['message_id'], ['appcrue_buffermessage'=>'id']);
-    
+            $table->add_key('message_id', XMLDB_KEY_FOREIGN, ['message_id'], ['appcrue_buffermessage' => 'id']);
+
             $dbman->create_table($table);
         }
-        // voting savepoint reached.
+        // AppCrue savepoint reached.
         upgrade_plugin_savepoint(true, 2025040802, 'message', 'appcrue');
     }
     if ($oldversion < 2025042600) {
@@ -85,7 +92,7 @@ function xmldb_message_appcrue_upgrade($oldversion) {
         $table = new xmldb_table('message_appcrue_buffered');
         $field = new xmldb_field('status', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, 0);
         $dbman->add_field($table, $field);
-        // appcrue savepoint reached.
+        // AppCrue savepoint reached.
         upgrade_plugin_savepoint(true, 2025042600, 'message', 'appcrue');
     }
     // Automatically generated Moodle v4.1.0 release upgrade line.

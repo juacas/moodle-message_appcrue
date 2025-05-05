@@ -27,17 +27,23 @@
 
 defined('MOODLE_INTERNAL') || die();
 
+global $CFG;
 require_once($CFG->dirroot.'/message/output/lib.php');
 require_once($CFG->dirroot.'/lib/filelib.php');
 require_once($CFG->dirroot.'/user/profile/lib.php');
 
+/**
+ * Messaging system for AppCrue.
+ */
 class message_output_appcrue extends \message_output {
     // Use the logging trait to get some nice, juicy, logging.
     use \core\task\logging_trait;
+    /** @var int Buffered message ready to be sent. */
     public const MESSAGE_READY = 0;
+    /** @var int Buffered message which presented failures when it was sent. */
     public const MESSAGE_FAILED = 1;
     /**
-     * Processes the message and sends a notification via appcrue
+     * Processes the message and sends a notification via AppCrue.
      *
      * @param stdClass $eventdata the event data submitted by the message sender plus $eventdata->savedmessageid
      * @return true if ok, false if error
@@ -46,9 +52,9 @@ class message_output_appcrue extends \message_output {
         global $CFG;
         $enabled = get_config('message_appcrue', 'enable_push');
         // Skip any messaging of suspended and deleted users.
-        if (!$enabled or $eventdata->userto->auth === 'nologin'
-            or $eventdata->userto->suspended
-            or $eventdata->userto->deleted) {
+        if (!$enabled || $eventdata->userto->auth === 'nologin'
+            || $eventdata->userto->suspended
+            || $eventdata->userto->deleted) {
             return true;
         }
         // Skip any messaging if suspended by admin system-wide.
@@ -65,7 +71,7 @@ class message_output_appcrue extends \message_output {
         if ($this->should_skip_message($eventdata)) {
             return true;
         }
-       
+
         $message = $this->build_message($eventdata);
 
         if (get_config('message_appcrue', 'bufferedmode') == true) {
@@ -93,12 +99,12 @@ class message_output_appcrue extends \message_output {
      * @return stdClass The formatted  message.
      */
     protected function build_message($eventdata) {
-        $message = new \stdClass();
+        $message = new stdClass();
         $message->body = $eventdata->fullmessage;
         $level = 3; // Default heading level.
 
         $url = $eventdata->contexturl;
-       
+
         $message->subject = $eventdata->subject;
         // Parse and format diferent message formats.
         if ($eventdata->component == 'mod_forum') {
@@ -160,7 +166,8 @@ class message_output_appcrue extends \message_output {
     }
     /**
      * Buffer messages (by title, message, url hash) and recipients in separate tables.
-     * @param \stdClass $user The Moodle user record that is being sent to.
+     *
+     * @param stdClass $user The Moodle user record that is being sent to.
      * @param string $body The message content to send to push.
      * @param string $title The title of the message.
      * @param string $url url to see the details of the notification.
@@ -169,7 +176,7 @@ class message_output_appcrue extends \message_output {
         global $DB;
         // Check if the message is already in the table.
         $hash = hash('sha256', $title . $body . $url . $status);
-        $message = $DB->get_record('message_appcrue_buffered', array('hash' => $hash));
+        $message = $DB->get_record('message_appcrue_buffered', ['hash' => $hash]);
         if (!$message) {
             // Insert message in the table.
             $message = new stdClass();
@@ -186,19 +193,23 @@ class message_output_appcrue extends \message_output {
             }
         }
         // Check if the user is already in the table.
-        $recipient = $DB->get_record('message_appcrue_recipients', array('recipient_id' => $user->id, 'message_id' => $message->id));
+        $recipient = $DB->get_record(
+            'message_appcrue_recipients',
+            ['recipient_id' => $user->id, 'message_id' => $message->id]
+        );
         if ($recipient) {
             // User already in the table.
             return true;
         }
         // Insert user in the table.
-        if (!$DB->insert_record('message_appcrue_recipients', array('recipient_id' => $user->id, 'message_id' => $message->id))) {
+        if (!$DB->insert_record('message_appcrue_recipients', ['recipient_id' => $user->id, 'message_id' => $message->id])) {
             debugging("Error inserting user {$user->id} in buffer.", DEBUG_DEVELOPER);
             return false;
         }
         return true;
     }
-    /** 
+
+    /**
      * Create bunches of 1000 users and send them to AppCrue.
      * @param array $users The list of users to send the message to.
      * @param string $title The title of the message.
@@ -215,8 +226,13 @@ class message_output_appcrue extends \message_output {
         $chunks = array_chunk($users, 1000);
         foreach ($chunks as $chunk) {
             // Load full user records for get_nick_name.
-            $ids= array_map(function($e){return $e->id;}, $chunk);
-            $users = $DB->get_records_list('user', 'id', $ids); 
+            $ids = array_map(
+                function($e) {
+                    return $e->id;
+                },
+                $chunk
+            );
+            $users = $DB->get_records_list('user', 'id', $ids);
             // Collect device aliases.
             $devicealiases = [];
             foreach ($users as $user) {
@@ -233,7 +249,6 @@ class message_output_appcrue extends \message_output {
             foreach ($errored as $userid => $alias) {
                 $errors[$userid] = $alias;
             }
-           
         }
         return $errors;
     }
@@ -247,7 +262,6 @@ class message_output_appcrue extends \message_output {
      * @throws moodle_exception if API can't be reached.
      */
     public function send_api_message_chunk($devicealiases, $title, $body, $url='') {
-       
         if (empty($devicealiases)) {
             return [];
         }
@@ -269,10 +283,10 @@ class message_output_appcrue extends \message_output {
 
         $jsonnotificacion = json_encode($data);
         $client = new curl();
-        $client->setHeader(array('Content-Type:application/json', 'X-TwinPush-REST-API-Key-Creator:'.$apicreator));
+        $client->setHeader(['Content-Type:application/json', 'X-TwinPush-REST-API-Key-Creator:'.$apicreator]);
         $options = [
             'CURLOPT_RETURNTRANSFER' => true,
-            'CURLOPT_CONNECTTIMEOUT' => 5 // JPC: Limit impact on other scheduled tasks.
+            'CURLOPT_CONNECTTIMEOUT' => 5, // JPC: Limit impact on other scheduled tasks.
         ];
         $apiurl = 'https://appcrue.twinpush.com/api/v2/apps/'.$appid.'/notifications';
         $response = $client->post($apiurl,
@@ -299,7 +313,12 @@ class message_output_appcrue extends \message_output {
             return [];
         }
     }
-    /** Limit lenght of text to 240 characters */
+
+    /**
+     * Limit text length to 240 characters.
+     *
+     * @param string $text body message.
+     */
     protected function trim_alert_text($text) {
         if (strlen($text) > 240) {
             $trimmed = substr($text, 0, 240) . '…';
@@ -346,12 +365,19 @@ class message_output_appcrue extends \message_output {
         return true;
     }
 
+    /**
+     * Tells whether the user has been configured on the TwinPush API.
+     *
+     * @param stdClass $user
+     * @return true Always true right now.
+     */
     public function is_user_configured($user = null) {
         return true;
     }
 
     /**
-     * Tests whether the AppCrue settings have been configured
+     * Tests whether the AppCrue settings have been configured.
+     *
      * @return boolean true if API is configured
      */
     public function is_system_configured() {
@@ -370,8 +396,8 @@ class message_output_appcrue extends \message_output {
             preg_match('/\Wd=(\d+)/', $eventdata->contexturl, $matches) ) {
 
             $id = (int) $matches[1];
-            $forumid = $DB->get_field('forum_discussions', 'forum', array('id' => $id));
-            $forum = $DB->get_record("forum", array("id" => $forumid));
+            $forumid = $DB->get_field('forum_discussions', 'forum', ['id' => $id]);
+            $forum = $DB->get_record("forum", ["id" => $forumid]);
             if ($forum->type !== "news") {
                 debugging("This forum message is filtered out due to configuration.", DEBUG_DEVELOPER);
                 return true;
@@ -379,6 +405,13 @@ class message_output_appcrue extends \message_output {
         }
         return false;
     }
+
+    /**
+     * Logs the given message only when it is not called via AJAX.
+     *
+     * @param string $message message to log during the messages processing.
+     * @return void
+     */
     protected function log_no_ajax($message) {
         if (!defined('AJAX_SCRIPT') || !AJAX_SCRIPT) {
             $this->log($message);

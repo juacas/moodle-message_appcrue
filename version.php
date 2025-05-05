@@ -33,5 +33,5 @@ $plugin->version = 2025043000;
 $plugin->requires = 2015111600;
 $plugin->maturity = MATURITY_STABLE;
 $plugin->dependencies = [
-    'mod_forum' => ANY_VERSION
+    'mod_forum' => ANY_VERSION,
 ];
