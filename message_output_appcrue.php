@@ -26,11 +26,12 @@
  */
 
 defined('MOODLE_INTERNAL') || die();
+use message_appcrue\twinpush_client;
 
 global $CFG;
 require_once($CFG->dirroot.'/message/output/lib.php');
-require_once($CFG->dirroot.'/lib/filelib.php');
-require_once($CFG->dirroot.'/user/profile/lib.php');
+// require_once($CFG->dirroot.'/lib/filelib.php');
+// require_once($CFG->dirroot.'/user/profile/lib.php');
 
 /**
  * Messaging system for AppCrue.
@@ -42,6 +43,20 @@ class message_output_appcrue extends \message_output {
     public const MESSAGE_READY = 0;
     /** @var int Buffered message which presented failures when it was sent. */
     public const MESSAGE_FAILED = 1;
+
+    /**
+     * Api client instance.
+     * @var message_appcrue\twinpush_client 
+     */
+    public $apiClient = null;
+    /**
+     * Constructor.
+     */
+    public function __construct() {
+        $apicreator = get_config('message_appcrue', 'apikey');
+        $appid = get_config('message_appcrue', 'appid');
+        $this->apiClient = new twinpush_client($apicreator, $appid);
+    }
     /**
      * Processes the message and sends a notification via AppCrue.
      *
@@ -51,6 +66,7 @@ class message_output_appcrue extends \message_output {
     public function send_message($eventdata) {
         global $CFG;
         $enabled = get_config('message_appcrue', 'enable_push');
+        // 
         // Skip any messaging of suspended and deleted users.
         if (!$enabled || $eventdata->userto->auth === 'nologin'
             || $eventdata->userto->suspended
@@ -243,8 +259,8 @@ class message_output_appcrue extends \message_output {
                 }
                 $devicealiases[$user->id] = $alias;
             }
-            $errored = $this->send_api_message_chunk($devicealiases, $title, $body, $url);
-
+            $errored = $this->apiClient->send_api_message_chunk($devicealiases, $title, $body, $url);
+          
             // Add to error list preserving keys.
             foreach ($errored as $userid => $alias) {
                 $errors[$userid] = $alias;
