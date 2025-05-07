@@ -11,7 +11,7 @@ AppCRUE uses as notification platform TwinPush (https://twinpush.com/). TwinPush
 
 This plugin can be used for any other application using TwinPush or a similar REST API.
 
-## For developing with TwinPush API ##
+## For developing with TwinPush API
 
 TwinPush provides a site with resources for developers: https://developers.twinpush.com/developers.
 
