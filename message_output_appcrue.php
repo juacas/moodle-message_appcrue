@@ -393,6 +393,7 @@ class message_output_appcrue extends \message_output {
         // If configured, skip forum messages not from "news" special forum.
         if (get_config('message_appcrue', 'onlynewsforum') == true &&
             $eventdata->component == 'mod_forum' &&
+            $eventdata->contexturl &&
             preg_match('/\Wd=(\d+)/', $eventdata->contexturl, $matches) ) {
 
             $id = (int) $matches[1];
