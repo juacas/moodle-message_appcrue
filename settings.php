@@ -27,7 +27,6 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-// if ($ADMIN->fulltree) {
 if ($hassiteconfig) {
     // Collect user fields.
     $fields = get_user_fieldnames();
@@ -43,9 +42,6 @@ if ($hassiteconfig) {
         $userfields["profile_field_{$field->shortname}"] = $field->name;
     }
 
-    // $settings = new admin_settingpage('message_appcrue', new lang_string('pluginname', 'message_appcrue'));
-    // $ADMIN->add('localplugins', $settings);
-
     /**
      * @var $settings admin_settingpage
      */
@@ -54,7 +50,7 @@ if ($hassiteconfig) {
         get_string('enable_push', 'message_appcrue'), null,
         true
     ));
-    
+
     $settings->add(new admin_setting_configtext('message_appcrue/apikey', get_string('api_key', 'message_appcrue'),
                                                 get_string('api_key_help', 'message_appcrue'), '', PARAM_TEXT));
     $settings->add(new admin_setting_configtext('message_appcrue/appid', get_string('app_id', 'message_appcrue'),

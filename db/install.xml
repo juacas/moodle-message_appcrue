@@ -1,8 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <XMLDB PATH="message/output/appcrue/db" VERSION="20250502" COMMENT="XMLDB file for Moodle message output appcrue. Buffer messages."
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:noNamespaceSchemaLocation="../../../../lib/xmldb/xmldb.xsd"
->
+    xsi:noNamespaceSchemaLocation="../../../../lib/xmldb/xmldb.xsd">
   <TABLES>
     <TABLE NAME="message_appcrue_buffered" COMMENT="Table for storing messages">
       <FIELDS>

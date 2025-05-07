@@ -11,6 +11,12 @@ AppCRUE uses as notification platform TwinPush (https://twinpush.com/). TwinPush
 
 This plugin can be used for any other application using TwinPush or a similar REST API.
 
+## For developing with TwinPush API
+
+TwinPush provides a site with resources for developers: https://developers.twinpush.com/developers.
+
+This plugin uses the API explained on https://developers.twinpush.com/developers/api. In particular, it is very helpful to follow the [Common error messages](https://developers.twinpush.com/developers/api#common-error-messages) to help you understand the source of the traced errors.
+
 # Functionality #
 
 This message output plugin provides the following services:
@@ -23,7 +29,7 @@ This message output plugin provides the following services:
 The notifications can be enabled/disabled/forced using Moodle's core notifications settings and user's preferences.
 
 # Known issues #
-- The plugin is not able to send messages to users that are not registered in TwinPush. This is a limitation of the TwinPush API.
+- The plugin is not able to send messages to users that are not registered in TwinPush. This is a limitation of the TwinPush API. In such cases, the error trace informs about [`NotificationNotCreated: Target cannot be empty`](https://developers.twinpush.com/developers/api#common-error-messages).
 - In "Buffered mode" the plugin sends the message to TwinPush API using a request for each 1000 users. This means that if you send a message to 5000 users, the plugin will send 5 requests to TwinPush API. The plugin will wait for the response of each request before sending the next one. This is done to avoid overloading the TwinPush API and to avoid sending too many requests in a short period of time.
 - The TwinPush API does not report recipient errors unless all the recipients are invalid. This means that if a message is sent to 10 users and only 1 of them is valid, the API will return a success response. This plugin treat the message as correctly sent.
 - If all the recipients are invalid, the plugin will mark the message as failed in the Moodle database. The message will not be sent to TwinPush API and the plugin will not retry to send it again. An error message will be shown in the scheduler task log.

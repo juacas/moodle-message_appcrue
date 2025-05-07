@@ -28,7 +28,11 @@ namespace message_appcrue\task;
 
 use coding_exception;
 use core\task\scheduled_task;
+use message_output_appcrue;
 use moodle_exception;
+
+defined('MOODLE_INTERNAL') || die();
+
 require_once(__DIR__ . '/../../message_output_appcrue.php');
 
 /**
@@ -62,10 +66,10 @@ class sendbuffered extends scheduled_task {
     public function execute() {
         global $DB;
         // Get appcrue message output.
-        $messageoutput = new \message_output_appcrue();
+        $messageoutput = new message_output_appcrue();
         // Get the buffered messages.
-        $messages = $DB->get_records('message_appcrue_buffered', 
-                        ['status' => \message_output_appcrue::MESSAGE_READY],
+        $messages = $DB->get_records('message_appcrue_buffered',
+                        ['status' => message_output_appcrue::MESSAGE_READY],
                         'created_at ASC', '*',
                         0, 500);
         // If there are no messages, return.
@@ -80,7 +84,12 @@ class sendbuffered extends scheduled_task {
             // Get the message.
             $message = (object) $message;
             // Get the recipients. Rename the field recipient_id to id for use in the send_api_message function.
-            $recipients = $DB->get_records('message_appcrue_recipients', ['message_id' => $message->id], null, 'recipient_id as id');
+            $recipients = $DB->get_records(
+                'message_appcrue_recipients',
+                ['message_id' => $message->id],
+                null,
+                'recipient_id as id'
+            );
             // If there are no recipients, continue.
             if (empty($recipients)) {
                 continue;
@@ -100,16 +109,25 @@ class sendbuffered extends scheduled_task {
             if (empty($unreachable) || get_config('message_appcrue', 'preserveundeliverable') == false) {
                 // Delete all the recipients of $message fron the buffer.
                 $DB->delete_records('message_appcrue_recipients', ['message_id' => $message->id]);
-            } else { 
+            } else {
                 // Keep the unreachable recipients in the buffer.
                 $globalerrored[$message->id] = $unreachable;
                 $errorids = array_keys($unreachable);
                 $this->log_no_ajax('Message ' . $message->id . ' not sent to users: ' . implode(',', $errorids));
                 [$insql, $params] = $DB->get_in_or_equal($errorids, SQL_PARAMS_QM, null, false);
                 // Delete all recipients from the buffer table *except errored users*.
-                $DB->delete_records_select('message_appcrue_recipients', 'message_id = ? AND recipient_id ' . $insql, array_merge([$message->id], $params));
+                $DB->delete_records_select(
+                    'message_appcrue_recipients',
+                    'message_id = ? AND recipient_id ' . $insql,
+                    array_merge([$message->id], $params)
+                );
                 // Mark the message as failed.
-                $DB->set_field('message_appcrue_buffered', 'status', \message_output_appcrue::MESSAGE_FAILED, ['id' => $message->id]);
+                $DB->set_field(
+                    'message_appcrue_buffered',
+                    'status',
+                    message_output_appcrue::MESSAGE_FAILED,
+                    ['id' => $message->id]
+                );
             }
         }
         // Delete fully sent messages (with no pending recipients).
