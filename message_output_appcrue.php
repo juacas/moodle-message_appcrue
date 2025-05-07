@@ -30,8 +30,6 @@ use message_appcrue\twinpush_client;
 
 global $CFG;
 require_once($CFG->dirroot.'/message/output/lib.php');
-// require_once($CFG->dirroot.'/lib/filelib.php');
-// require_once($CFG->dirroot.'/user/profile/lib.php');
 
 /**
  * Messaging system for AppCrue.
@@ -324,7 +322,7 @@ class message_output_appcrue extends \message_output {
         $info = $client->get_info();
         if ($client->get_errno() || $info['http_code'] != 200) {
             debugging('Curl error: ' . $client->get_errno(). ':' . $response , DEBUG_MINIMAL);
-            throw new moodle_exception('apicallerror', 'message_appcrue', '', $client->get_error());
+            throw new moodle_exception('apicallerror', 'message_appcrue', '', $client->error);
         } else {
             return [];
         }
