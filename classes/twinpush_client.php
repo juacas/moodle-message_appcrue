@@ -97,10 +97,10 @@ class twinpush_client {
         if (isset($respjson->errors)) {
             if ($respjson->errors->type == 'AppNotFound') {
                 throw new \moodle_exception('apicallerror', 'message_appcrue', '', 'App not found. Check App ID.');
-            } else if ($respjson->type == 'NotificationNotCreated') {
+            } else if (isset($respjson->type) && $respjson->type == 'NotificationNotCreated') {
                 $this->log_no_ajax("Error sending message '{$title}' to {$aliasesstr}: {$respjson->errors->message}");
                 return $devicealiases;
-            } else if ($respjson->type == 'DeviceAliasNotFound') {
+            } else if (isset($respjson->type) && $respjson->type == 'DeviceAliasNotFound') {
                 // Device alias not found. Remove it from the list.
                 foreach ($respjson->errors->device_aliases as $alias) {
                     $key = array_search($alias, $devicealiases);
@@ -122,7 +122,7 @@ class twinpush_client {
         $info = $client->get_info();
         if ($client->get_errno() || $info['http_code'] != 200) {
             debugging('Curl error: ' . $client->get_errno(). ':' . $response , DEBUG_MINIMAL);
-            throw new \moodle_exception('apicallerror', 'message_appcrue', '', $client->get_error());
+            throw new \moodle_exception('apicallerror', 'message_appcrue', '', $client->error);
         } else {
             return [];
         }

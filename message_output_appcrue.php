@@ -114,7 +114,6 @@ class message_output_appcrue extends \message_output {
      */
     protected function build_message($eventdata) {
         $message = new stdClass();
-        $message->body = $eventdata->fullmessage;
         $level = 3; // Default heading level.
 
         $url = $eventdata->contexturl;
@@ -151,6 +150,8 @@ class message_output_appcrue extends \message_output {
             // Remove empty lines.
             // Best viewed in just one html paragraph.
             $body = "<p>" . preg_replace('/^\r?\n/m', '', $body) . "</p>";
+        } else {
+            $body = $eventdata->fullmessage;
         }
          // Defaults url to Dashboard.
         if (empty($url)) {
