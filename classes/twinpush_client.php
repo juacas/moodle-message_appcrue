@@ -40,7 +40,7 @@ class twinpush_client {
      * @var string appid
      */
     protected $appid;
-    
+
 
     /**
      * Constructor.
@@ -58,15 +58,15 @@ class twinpush_client {
      * @param string $body The message contect to send to AppCrue.
      * @param string $url url to see the details of the notification.
      * @return array userid=>aliases not sent.
-     * @throws moodle_exception if API can't be reached.
+     * @throws \moodle_exception if API can't be reached.
      */
     public function send_api_message_chunk($devicealiases, $title, $body, $url='') {
-       
+
         if (empty($devicealiases)) {
             return [];
         }
 
-      
+
         $data = new stdClass();
         $data->broadcast = false;
         $data->devices_aliases = array_values($devicealiases);
@@ -137,6 +137,9 @@ class twinpush_client {
     }
 
     protected function log_no_ajax($message) {
+        if (!headers_sent()) {
+            return; // If headers are already sent, we cannot use mtrace.
+        }
         if (!defined('AJAX_SCRIPT') || !AJAX_SCRIPT) {
             $this->log($message);
         }

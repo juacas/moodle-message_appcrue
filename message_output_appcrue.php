@@ -44,7 +44,7 @@ class message_output_appcrue extends \message_output {
 
     /**
      * Api client instance.
-     * @var message_appcrue\twinpush_client 
+     * @var message_appcrue\twinpush_client
      */
     public $apiClient = null;
     /**
@@ -64,7 +64,7 @@ class message_output_appcrue extends \message_output {
     public function send_message($eventdata) {
         global $CFG;
         $enabled = get_config('message_appcrue', 'enable_push');
-        // 
+        //
         // Skip any messaging of suspended and deleted users.
         if (!$enabled || $eventdata->userto->auth === 'nologin'
             || $eventdata->userto->suspended
@@ -109,6 +109,10 @@ class message_output_appcrue extends \message_output {
     }
     /**
      * Format the message body.
+     * For forums, it extracts the body from the fullmessage, clean it and format it as HTML.
+     * For instant messages, it uses the smallmessage and formats it as HTML. If the message
+     * has a Markdown heading, it uses it as subject.
+     *
      * @param stdClass $eventdata The message to format.
      * @return stdClass The formatted  message.
      */
@@ -135,7 +139,8 @@ class message_output_appcrue extends \message_output {
         } else if ($eventdata->component == 'moodle' && $eventdata->name == 'instantmessage') {
             // Extract URL from body of fullmessage.
             $re = '/((https?:\/\/)[^\s.]+\.[:\w][^\s"]+)/m';
-            if (preg_match($re, $eventdata->fullmessage, $matches)) {
+            $messagetxt = $eventdata->fullmessage == "" ? $eventdata->smallmessage : $eventdata->fullmessage;
+            if (preg_match($re, $messagetxt, $matches)) {
                 $url = $matches[1];
             }
             // And add text from Subject.
@@ -146,6 +151,8 @@ class message_output_appcrue extends \message_output {
                 $level = strlen($bodyparts[1]);
                 $subject = $bodyparts[2];
                 $body = $bodyparts[3];
+            } else {
+                $subject = $eventdata->subject;
             }
             // Remove empty lines.
             // Best viewed in just one html paragraph.
@@ -154,13 +161,14 @@ class message_output_appcrue extends \message_output {
             $body = $eventdata->fullmessage;
         }
          // Defaults url to Dashboard.
-        if (empty($url)) {
-            $url = new moodle_url('/my');
-        }
+        // if (empty($url)) {
+        //     $url = new moodle_url('/my');
+        // }
 
-        $message->body = "<h{$level}>$message->subject</h{$level}>$body";
+        $message->body = "<h{$level}>$subject</h{$level}>$body";
         // Create target url.
-        $message->url = $this->get_target_url($url);
+        $message->url = $url ? $this->get_target_url($url) : null;
+        $message->subject = strip_tags($subject);
         return $message;
     }
     /**
@@ -259,7 +267,7 @@ class message_output_appcrue extends \message_output {
                 $devicealiases[$user->id] = $alias;
             }
             $errored = $this->apiClient->send_api_message_chunk($devicealiases, $title, $body, $url);
-          
+
             // Add to error list preserving keys.
             foreach ($errored as $userid => $alias) {
                 $errors[$userid] = $alias;
@@ -423,13 +431,17 @@ class message_output_appcrue extends \message_output {
     }
 
     /**
-     * Logs the given message only when it is not called via AJAX.
+     * Logs the given message only when it is not called via AJAX nor WEBSERVICES.
      *
      * @param string $message message to log during the messages processing.
      * @return void
      */
     protected function log_no_ajax($message) {
-        if (!defined('AJAX_SCRIPT') || !AJAX_SCRIPT) {
+        // If headers are already sent, we cannot use mtrace.
+        if (!headers_sent()) {
+            return;
+        }
+        if ( !defined('AJAX_SCRIPT') || !AJAX_SCRIPT ) {
             $this->log($message);
         }
     }
