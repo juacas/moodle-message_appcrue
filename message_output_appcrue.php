@@ -122,11 +122,13 @@ class message_output_appcrue extends \message_output {
 
         $url = $eventdata->contexturl;
 
-        $message->subject = $eventdata->subject;
+        $subject = $eventdata->subject;
+        $body = $eventdata->fullmessage;
+
         // Parse and format diferent message formats.
         if ($eventdata->component == 'mod_forum') {
             // Extract body.
-            if (preg_match('/^-{50,}\n(.*)^-{50,}/sm', $message->body, $matches)) {
+            if (preg_match('/^-{50,}\n(.*)^-{50,}/sm', $body, $matches)) {
                 $body = $matches[1];
             }
             // Remove empty lines.
@@ -160,11 +162,7 @@ class message_output_appcrue extends \message_output {
         } else {
             $body = $eventdata->fullmessage;
         }
-         // Defaults url to Dashboard.
-        // if (empty($url)) {
-        //     $url = new moodle_url('/my');
-        // }
-
+        
         $message->body = "<h{$level}>$subject</h{$level}>$body";
         // Create target url.
         $message->url = $url ? $this->get_target_url($url) : null;
