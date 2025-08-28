@@ -29,7 +29,7 @@ defined('MOODLE_INTERNAL') || die();
 use message_appcrue\twinpush_client;
 
 global $CFG;
-require_once($CFG->dirroot.'/message/output/lib.php');
+require_once($CFG->dirroot . '/message/output/lib.php');
 
 /**
  * Messaging system for AppCrue.
@@ -37,6 +37,7 @@ require_once($CFG->dirroot.'/message/output/lib.php');
 class message_output_appcrue extends \message_output {
     // Use the logging trait to get some nice, juicy, logging.
     use \core\task\logging_trait;
+
     /** @var int Buffered message ready to be sent. */
     public const MESSAGE_READY = 0;
     /** @var int Buffered message which presented failures when it was sent. */
@@ -46,14 +47,14 @@ class message_output_appcrue extends \message_output {
      * Api client instance.
      * @var message_appcrue\twinpush_client
      */
-    public $apiClient = null;
+    public $apiclient = null;
     /**
      * Constructor.
      */
     public function __construct() {
         $apicreator = get_config('message_appcrue', 'apikey');
         $appid = get_config('message_appcrue', 'appid');
-        $this->apiClient = new twinpush_client($apicreator, $appid);
+        $this->apiclient = new twinpush_client($apicreator, $appid);
     }
     /**
      * Processes the message and sends a notification via AppCrue.
@@ -66,14 +67,18 @@ class message_output_appcrue extends \message_output {
         $enabled = get_config('message_appcrue', 'enable_push');
         //
         // Skip any messaging of suspended and deleted users.
-        if (!$enabled || $eventdata->userto->auth === 'nologin'
+        if (
+            !$enabled || $eventdata->userto->auth === 'nologin'
             || $eventdata->userto->suspended
-            || $eventdata->userto->deleted) {
+            || $eventdata->userto->deleted
+        ) {
             return true;
         }
         // Skip any messaging if suspended by admin system-wide.
-        if ($eventdata->userto->email !== 'dummyuser@bademail.local' // Note: special user bypassed while testing.
-            && !empty($CFG->noemailever)) {
+        if (
+            $eventdata->userto->email !== 'dummyuser@bademail.local' // Note: special user bypassed while testing.
+            && !empty($CFG->noemailever)
+        ) {
             // Hidden setting for development sites, set in config.php if needed.
             debugging('$CFG->noemailever is active, no appcrue message sent.', DEBUG_MINIMAL);
             return true;
@@ -122,48 +127,19 @@ class message_output_appcrue extends \message_output {
 
         $url = $eventdata->contexturl;
 
-        $subject = $eventdata->subject;
         $body = $eventdata->fullmessage;
+        $subject = $eventdata->subject;
 
         // Parse and format diferent message formats.
         if ($eventdata->component == 'mod_forum') {
-            // Extract body.
-            if (preg_match('/^-{50,}\n(.*)^-{50,}/sm', $body, $matches)) {
-                $body = $matches[1];
-            }
-            // Remove empty lines.
-            $body = preg_replace('/^\r?\n/m', '', $body);
-            // Replace bullets+newlines.
-            $body = preg_replace('/\*\s*/m', '* ', $body);
-            // Replace natural end-of-paragraph new lines (.\n) with <p>.
-            $body = '<p>' . preg_replace('/\.\r?\n/m', '</p><p>', $body) . '</p>';
-
+            [$body, $subject] = message_appcrue\message_helper::extract_forum_body_subject($eventdata);
         } else if ($eventdata->component == 'moodle' && $eventdata->name == 'instantmessage') {
-            // Extract URL from body of fullmessage.
-            $re = '/((https?:\/\/)[^\s.]+\.[:\w][^\s"]+)/m';
-            $messagetxt = $eventdata->fullmessage == "" ? $eventdata->smallmessage : $eventdata->fullmessage;
-            if (preg_match($re, $messagetxt, $matches)) {
-                $url = $matches[1];
-            }
-            // And add text from Subject.
-            $body = $eventdata->smallmessage;
-            // Process message.
-            // If first line is a MARKDOWN heading use it as subject.
-            if (preg_match('/(#+)\s*(.*)\n([\S|\s]*)$/m', $body, $bodyparts)) {
-                $level = strlen($bodyparts[1]);
-                $subject = $bodyparts[2];
-                $body = $bodyparts[3];
-            } else {
-                $subject = $eventdata->subject;
-            }
-            // Remove empty lines.
-            // Best viewed in just one html paragraph.
-            $body = "<p>" . preg_replace('/^\r?\n/m', '', $body) . "</p>";
-        } else {
-            $body = $eventdata->fullmessage;
+            [$body, $subject] = message_appcrue\message_helper::extract_instantmessage_body_subject($eventdata);
+        } else if ($eventdata->component == 'local_mail') {
+            [$body, $subject] = message_appcrue\message_helper::extract_localmail_body_subject($eventdata);
         }
-        
-        $message->body = "<h{$level}>$subject</h{$level}>$body";
+
+        $message->body = $body;
         // Create target url.
         $message->url = $url ? $this->get_target_url($url) : null;
         $message->subject = strip_tags($subject);
@@ -239,7 +215,7 @@ class message_output_appcrue extends \message_output {
      * @return array The list of userid=>alias that errored while sending the message [$user->id => $devicealias].
      * @throws moodle_exception if API can't be reached.
      */
-    public function send_api_message($users, $title, $body, $url='') {
+    public function send_api_message($users, $title, $body, $url = '') {
         global $DB;
         // Accumulate errors.
         $errors = [];
@@ -248,7 +224,7 @@ class message_output_appcrue extends \message_output {
         foreach ($chunks as $chunk) {
             // Load full user records for get_nick_name.
             $ids = array_map(
-                function($e) {
+                function ($e) {
                     return $e->id;
                 },
                 $chunk
@@ -264,7 +240,7 @@ class message_output_appcrue extends \message_output {
                 }
                 $devicealiases[$user->id] = $alias;
             }
-            $errored = $this->apiClient->send_api_message_chunk($devicealiases, $title, $body, $url);
+            $errored = $this->apiclient->send_api_message_chunk($devicealiases, $title, $body, $url);
 
             // Add to error list preserving keys.
             foreach ($errored as $userid => $alias) {
@@ -282,7 +258,7 @@ class message_output_appcrue extends \message_output {
      * @return array userid=>aliases not sent.
      * @throws moodle_exception if API can't be reached.
      */
-    public function send_api_message_chunk($devicealiases, $title, $body, $url='') {
+    public function send_api_message_chunk($devicealiases, $title, $body, $url = '') {
         if (empty($devicealiases)) {
             return [];
         }
@@ -304,21 +280,23 @@ class message_output_appcrue extends \message_output {
 
         $jsonnotificacion = json_encode($data);
         $client = new curl();
-        $client->setHeader(['Content-Type:application/json', 'X-TwinPush-REST-API-Key-Creator:'.$apicreator]);
+        $client->setHeader(['Content-Type:application/json', 'X-TwinPush-REST-API-Key-Creator:' . $apicreator]);
         $options = [
             'CURLOPT_RETURNTRANSFER' => true,
             'CURLOPT_CONNECTTIMEOUT' => 5, // JPC: Limit impact on other scheduled tasks.
         ];
-        $apiurl = 'https://appcrue.twinpush.com/api/v2/apps/'.$appid.'/notifications';
-        $response = $client->post($apiurl,
+        $apiurl = 'https://appcrue.twinpush.com/api/v2/apps/' . $appid . '/notifications';
+        $response = $client->post(
+            $apiurl,
             $jsonnotificacion,
-            $options);
+            $options
+        );
         // Catch errors in response and log them.
         $respjson = json_decode($response);
         $aliasesstr = implode(', ', $devicealiases);
         if (isset($respjson->errors)) {
             if ($respjson->errors->type == 'AppNotFound') {
-                throw new moodle_exception('apicallerror', 'message_appcrue', '', 'App not found. Check App ID.');
+                throw new moodle_exception('api_callerror', 'message_appcrue', '', 'App not found. Check App ID.');
             }
             $this->log_no_ajax("Error sending message '{$title}' to {$aliasesstr}: {$response}");
             return $devicealiases;
@@ -328,8 +306,8 @@ class message_output_appcrue extends \message_output {
         // Check if any error occurred.
         $info = $client->get_info();
         if ($client->get_errno() || $info['http_code'] != 200) {
-            debugging('Curl error: ' . $client->get_errno(). ':' . $response , DEBUG_MINIMAL);
-            throw new moodle_exception('apicallerror', 'message_appcrue', '', $client->error);
+            debugging('Curl error: ' . $client->get_errno() . ':' . $response, DEBUG_MINIMAL);
+            throw new moodle_exception('api_callerror', 'message_appcrue', '', $client->error);
         } else {
             return [];
         }
@@ -412,11 +390,12 @@ class message_output_appcrue extends \message_output {
     protected function should_skip_message($eventdata) {
         global $DB;
         // If configured, skip forum messages not from "news" special forum.
-        if (get_config('message_appcrue', 'onlynewsforum') == true &&
+        if (
+            get_config('message_appcrue', 'onlynewsforum') == true &&
             $eventdata->component == 'mod_forum' &&
             $eventdata->contexturl &&
-            preg_match('/\Wd=(\d+)/', $eventdata->contexturl, $matches) ) {
-
+            preg_match('/\Wd=(\d+)/', $eventdata->contexturl, $matches)
+        ) {
             $id = (int) $matches[1];
             $forumid = $DB->get_field('forum_discussions', 'forum', ['id' => $id]);
             $forum = $DB->get_record("forum", ["id" => $forumid]);
@@ -439,7 +418,7 @@ class message_output_appcrue extends \message_output {
         if (!headers_sent()) {
             return;
         }
-        if ( !defined('AJAX_SCRIPT') || !AJAX_SCRIPT ) {
+        if (!defined('AJAX_SCRIPT') || !AJAX_SCRIPT) {
             $this->log($message);
         }
     }

@@ -26,24 +26,25 @@
  */
 
 defined('MOODLE_INTERNAL') || die();
-$string['pluginname'] = 'Push notifications for Appcrue';
+$string['api_callerror'] = 'Error calling AppCrue API';
 $string['api_key'] = 'APIKey for AppCrue Notification';
 $string['api_key_help'] = 'APIKey for AppCrue Notification';
 $string['app_id'] = 'AppId for AppCrue Notification';
 $string['app_id_help'] = 'AppId for AppCrue Notification';
-$string['bufferedmode'] = 'Asynchronows mode';
+$string['bufferedmode'] = 'Asynchronous mode';
 $string['bufferedmode_help'] = 'Messages are buffered and sent in chunks in background. In "Buffered mode" the plugin sends the message to TwinPush API using a request for each 1000 users. This means that if you send a message to 5000 users, the plugin will send 5 requests to TwinPush API. The plugin will wait for the response of each request before sending the next one. This is done to avoid overloading the TwinPush API and to avoid sending too many requests in a short period of time. See README.md';
+$string['enable_push'] = 'Enable push message service';
 $string['group_name'] = 'Group name for AppCrue Notification';
 $string['group_name_help'] = 'Group name for AppCrue Notification';
-$string['only_news_forum'] = 'Filter forums notifications.';
-$string['only_news_forum_help'] = 'Filter forums notifications and only send messages from the "News" forum.';
 $string['match_user_by'] = 'Field for matching user in Push API';
 $string['match_user_by_help'] = 'Each user is associated to a name in the push API that may not match with userid in Moodle.';
-$string['privacy:metadata'] = 'The "Push Notifications for AppCrue" plugin does not store any personal data.';
+$string['only_news_forum'] = 'Filter forums notifications.';
+$string['only_news_forum_help'] = 'Filter forums notifications and only send messages from the "News" forum.';
+$string['pluginname'] = 'Push notifications for Appcrue';
 $string['preserveundeliverable'] = 'Buffer undeliverable messages';
 $string['preserveundeliverable_help'] = 'If the message is rejected by TwinPush (mainly because unknown device_alias), it will be stored in the database marked as failed. This is useful if you want to debug delivery problems.';
-$string['enable_push'] = 'Enable push message service';
-$string['url_pattern_help'] = 'URL pattern for push notifications. The following variables are available: {url}:the message\'s url, {siteurl}:base url of the server. Example: {siteurl}/local/appcrue/autologin.php?urltogo={url}&fallback=continue&<bearer>';
-$string['url_pattern'] = 'URL pattern for the event\'s links.';
+$string['privacy:metadata'] = 'The "Push Notifications for AppCrue" plugin does not store any personal data.';
 $string['sendbufferedtask'] = 'Send buffered messages';
 $string['sendbufferedtaskerror'] = 'Some recipients were not reached for messages: {$a}';
+$string['url_pattern'] = 'URL pattern for the event\'s links.';
+$string['url_pattern_help'] = 'URL pattern for push notifications. The following variables are available: {url}:the message\'s url, {siteurl}:base url of the server. Example: {siteurl}/local/appcrue/autologin.php?urltogo={url}&fallback=continue&<bearer>';

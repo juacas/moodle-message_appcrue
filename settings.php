@@ -42,24 +42,43 @@ if ($hassiteconfig) {
         $userfields["profile_field_{$field->shortname}"] = $field->name;
     }
 
-    /**
-     * @var $settings admin_settingpage
-     */
-    $settings->add(new admin_setting_configcheckbox(
-        'message_appcrue/enable_push',
-        get_string('enable_push', 'message_appcrue'), null,
-        true
-    ));
+    /** @var $settings admin_settingpage */
+    $settings->add(
+        new admin_setting_configcheckbox(
+            'message_appcrue/enable_push',
+            get_string('enable_push', 'message_appcrue'),
+            null,
+            true
+        )
+    );
 
-    $settings->add(new admin_setting_configtext('message_appcrue/apikey', get_string('api_key', 'message_appcrue'),
-                                                get_string('api_key_help', 'message_appcrue'), '', PARAM_TEXT));
-    $settings->add(new admin_setting_configtext('message_appcrue/appid', get_string('app_id', 'message_appcrue'),
-                                                get_string('app_id_help', 'message_appcrue'), '', PARAM_TEXT));
-    $settings->add(new admin_setting_configtext('message_appcrue/group_name', get_string('group_name', 'message_appcrue'),
-                                                get_string('group_name_help', 'message_appcrue'), 'Moodle message', PARAM_TEXT));
-    $settings->add(new admin_setting_configcheckbox('message_appcrue/onlynewsforum',
-                                                get_string('only_news_forum', 'message_appcrue'),
-                                                get_string('only_news_forum_help', 'message_appcrue'), 1));
+    $settings->add(new admin_setting_configtext(
+        'message_appcrue/apikey',
+        get_string('api_key', 'message_appcrue'),
+        get_string('api_key_help', 'message_appcrue'),
+        '',
+        PARAM_TEXT
+    ));
+    $settings->add(new admin_setting_configtext(
+        'message_appcrue/appid',
+        get_string('app_id', 'message_appcrue'),
+        get_string('app_id_help', 'message_appcrue'),
+        '',
+        PARAM_TEXT
+    ));
+    $settings->add(new admin_setting_configtext(
+        'message_appcrue/group_name',
+        get_string('group_name', 'message_appcrue'),
+        get_string('group_name_help', 'message_appcrue'),
+        'Moodle message',
+        PARAM_TEXT
+    ));
+    $settings->add(new admin_setting_configcheckbox(
+        'message_appcrue/onlynewsforum',
+        get_string('only_news_forum', 'message_appcrue'),
+        get_string('only_news_forum_help', 'message_appcrue'),
+        1
+    ));
 
     $settings->add(new admin_setting_configselect(
         'message_appcrue/match_user_by',
@@ -70,19 +89,27 @@ if ($hassiteconfig) {
     ));
 
     // Configure url pattern for generating the urls to the events.
-    $settings->add(new admin_setting_configtext('message_appcrue/urlpattern', get_string('url_pattern', 'message_appcrue'),
-    get_string('url_pattern_help', 'message_appcrue'), '', PARAM_RAW_TRIMMED, 100));
+    $settings->add(new admin_setting_configtext(
+        'message_appcrue/urlpattern',
+        get_string('url_pattern', 'message_appcrue'),
+        get_string('url_pattern_help', 'message_appcrue'),
+        '',
+        PARAM_RAW_TRIMMED,
+        100
+    ));
     // Select if the messages are buffered.
     $settings->add(new admin_setting_configcheckbox(
         'message_appcrue/bufferedmode',
         get_string('bufferedmode', 'message_appcrue'),
-        get_string('bufferedmode_help', 'message_appcrue'), 0
+        get_string('bufferedmode_help', 'message_appcrue'),
+        0
     ));
     // Preserve undeliverable messages in buffered mode.
     $settings->add(new admin_setting_configcheckbox(
         'message_appcrue/preserveundeliverable',
         get_string('preserveundeliverable', 'message_appcrue'),
-        get_string('preserveundeliverable_help', 'message_appcrue'), 0
+        get_string('preserveundeliverable_help', 'message_appcrue'),
+        0
     ));
     $settings->hide_if(
         'message_appcrue/preserveundeliverable',

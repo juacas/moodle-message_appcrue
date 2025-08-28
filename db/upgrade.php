@@ -59,7 +59,6 @@ function xmldb_message_appcrue_upgrade($oldversion) {
     // Automatically generated Moodle v4.0.0 release upgrade line.
     // Put any upgrade step following this.
     if ($oldversion < 2025040802) {
-
         if (!$dbman->table_exists('message_appcrue_buffered')) {
             $table = new xmldb_table('message_appcrue_buffered');
             $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
@@ -80,7 +79,7 @@ function xmldb_message_appcrue_upgrade($oldversion) {
             $table->add_field('message_id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
             $table->add_field('recipient_id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
             $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
-            $table->add_key('message_id', XMLDB_KEY_FOREIGN, ['message_id'], ['appcrue_buffermessage' => 'id']);
+            $table->add_key('message_id', XMLDB_KEY_FOREIGN, ['message_id'], 'appcrue_buffermessage', ['id']);
 
             $dbman->create_table($table);
         }

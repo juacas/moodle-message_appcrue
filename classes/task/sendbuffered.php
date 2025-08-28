@@ -46,6 +46,7 @@ require_once(__DIR__ . '/../../message_output_appcrue.php');
 class sendbuffered extends scheduled_task {
     // Use the logging trait to get some nice, juicy, logging.
     use \core\task\logging_trait;
+
     /**
      * get_name
      * @return string
@@ -61,17 +62,21 @@ class sendbuffered extends scheduled_task {
      * Remove them from the buffer.
      * @return void
      * @throws coding_exception
-     * @throws dml_exception
+     * @throws \dml_exception
      */
     public function execute() {
         global $DB;
         // Get appcrue message output.
         $messageoutput = new message_output_appcrue();
         // Get the buffered messages.
-        $messages = $DB->get_records('message_appcrue_buffered',
-                        ['status' => message_output_appcrue::MESSAGE_READY],
-                        'created_at ASC', '*',
-                        0, 500);
+        $messages = $DB->get_records(
+            'message_appcrue_buffered',
+            ['status' => message_output_appcrue::MESSAGE_READY],
+            'created_at ASC',
+            '*',
+            0,
+            500
+        );
         // If there are no messages, return.
         if (empty($messages)) {
             return;
@@ -97,7 +102,7 @@ class sendbuffered extends scheduled_task {
             $unreachable = [];
             try {
                 // Send the message.
-                $unreachable = $messageoutput->send_api_message( $recipients, $message->subject, $message->body, $message->url);
+                $unreachable = $messageoutput->send_api_message($recipients, $message->subject, $message->body, $message->url);
             } catch (moodle_exception $e) {
                 // Error sending the message.
                 // Log the error and leave untouched recipients in buffer for retrying.
@@ -146,5 +151,5 @@ class sendbuffered extends scheduled_task {
         if (!defined('AJAX_SCRIPT') || !AJAX_SCRIPT) {
             $this->log($message);
         }
-    } // log_no_ajax
+    }
 }

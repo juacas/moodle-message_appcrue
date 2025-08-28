@@ -25,13 +25,15 @@
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 namespace message_appcrue;
-defined('MOODLE_INTERNAL') || die();
 use stdClass;
 use curl;
-
+/**
+ * Client to connect to TwinPush API.
+ */
 class twinpush_client {
     // Use the logging trait to get some nice, juicy, logging.
     use \core\task\logging_trait;
+
     /**
      * @var string apikey
      */
@@ -60,12 +62,11 @@ class twinpush_client {
      * @return array userid=>aliases not sent.
      * @throws \moodle_exception if API can't be reached.
      */
-    public function send_api_message_chunk($devicealiases, $title, $body, $url='') {
+    public function send_api_message_chunk($devicealiases, $title, $body, $url = '') {
 
         if (empty($devicealiases)) {
             return [];
         }
-
 
         $data = new stdClass();
         $data->broadcast = false;
@@ -82,21 +83,23 @@ class twinpush_client {
 
         $jsonnotificacion = json_encode($data);
         $client = new curl();
-        $client->setHeader(array('Content-Type:application/json', 'X-TwinPush-REST-API-Key-Creator: ' . $this->apikey));
+        $client->setHeader(['Content-Type:application/json', 'X-TwinPush-REST-API-Key-Creator: ' . $this->apikey]);
         $options = [
             'CURLOPT_RETURNTRANSFER' => true,
-            'CURLOPT_CONNECTTIMEOUT' => 5 // JPC: Limit impact on other scheduled tasks.
+            'CURLOPT_CONNECTTIMEOUT' => 5, // JPC: Limit impact on other scheduled tasks.
         ];
         $apiurl = 'https://appcrue.twinpush.com/api/v2/apps/' . $this->appid . '/notifications';
-        $response = $client->post($apiurl,
+        $response = $client->post(
+            $apiurl,
             $jsonnotificacion,
-            $options);
+            $options
+        );
         // Catch errors in response and log them.
         $respjson = json_decode($response);
         $aliasesstr = implode(', ', $devicealiases);
         if (isset($respjson->errors)) {
             if ($respjson->errors->type == 'AppNotFound') {
-                throw new \moodle_exception('apicallerror', 'message_appcrue', '', 'App not found. Check App ID.');
+                throw new \moodle_exception('api_callerror', 'message_appcrue', '', 'App not found. Check App ID.');
             } else if (isset($respjson->type) && $respjson->type == 'NotificationNotCreated') {
                 $this->log_no_ajax("Error sending message '{$title}' to {$aliasesstr}: {$respjson->errors->message}");
                 return $devicealiases;
@@ -121,13 +124,15 @@ class twinpush_client {
         // Check if any error occurred.
         $info = $client->get_info();
         if ($client->get_errno() || $info['http_code'] != 200) {
-            debugging('Curl error: ' . $client->get_errno(). ':' . $response , DEBUG_MINIMAL);
-            throw new \moodle_exception('apicallerror', 'message_appcrue', '', $client->error);
+            debugging('Curl error: ' . $client->get_errno() . ':' . $response, DEBUG_MINIMAL);
+            throw new \moodle_exception('api_callerror', 'message_appcrue', '', $client->error);
         } else {
             return [];
         }
     }
-    /** Limit lenght of text to 240 characters */
+    /**
+     * Limit length of text to 240 characters.
+     */
     protected function trim_alert_text($text) {
         if (strlen($text) > 240) {
             $trimmed = substr($text, 0, 240) . '…';
@@ -136,6 +141,11 @@ class twinpush_client {
         return $text;
     }
 
+    /**
+     * Summary of log_no_ajax
+     * @param mixed $message
+     * @return void
+     */
     protected function log_no_ajax($message) {
         if (!headers_sent()) {
             return; // If headers are already sent, we cannot use mtrace.

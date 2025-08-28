@@ -38,10 +38,18 @@ namespace message_appcrue\tests;
  *
  * @group message_appcrue
  */
-class send_message_test extends \advanced_testcase {
-
+final class send_message_test extends \advanced_testcase {
     use \core\message\send_message_test_trait;
+    
+    /**
+     * Plugin object.
+     * @var \message_output_appcrue
+     */
     public $appcrueoutput;
+    /**
+     * Users.
+     * @var array
+     */
     protected $users;
 
     final public function setUp(): void {
@@ -52,11 +60,11 @@ class send_message_test extends \advanced_testcase {
         // Set mockup for the TwinPush client.
         $this->appcrueoutput->apiclient = new \message_appcrue\test\twinpush_client();
 
-        self::$course = self::getDataGenerator()->create_course();        
+        self::$course = self::getDataGenerator()->create_course();
         // Create 10 users
         for ($i = 0; $i < 10; $i++) {
             $this->users[$i] = self::getDataGenerator()->create_user(['idnumber' => $i . '']);
-        }               
+        }
 
         self::getDataGenerator()->enrol_user(self::$user->id, self::$course->id);
     }
@@ -70,7 +78,7 @@ class send_message_test extends \advanced_testcase {
      * @param int $expected
      * @param bool $expectedresult
      */
-    public function test_send_instant_message_to_single_user(int $launched, int $expected, bool $expectedresult) {
+    public function test_send_instant_message_to_single_user(int $launched, int $expected, bool $expectedresult): void {
         // Created eventdata.
         $eventdata = new \core\message\message();
         $eventdata->component = 'moodle';
@@ -84,7 +92,6 @@ class send_message_test extends \advanced_testcase {
         $eventdata->smallmessage = 'Test message';
         $eventdata->contexturl = '';
         $eventdata->contexturlname = '';
-
 
         $result = \core\message\message::send_instant_messages([$eventdata]);
 
