@@ -134,7 +134,7 @@ class message_output_appcrue extends \message_output {
         if ($eventdata->component == 'mod_forum') {
             [$body, $subject] = message_appcrue\message_helper::extract_forum_body_subject($eventdata);
         } else if ($eventdata->component == 'moodle' && $eventdata->name == 'instantmessage') {
-            [$body, $subject] = message_appcrue\message_helper::extract_instantmessage_body_subject($eventdata);
+            [$body, $subject, $url] = message_appcrue\message_helper::extract_instantmessage_body_subject($eventdata);
         } else if ($eventdata->component == 'local_mail') {
             [$body, $subject] = message_appcrue\message_helper::extract_localmail_body_subject($eventdata);
         }

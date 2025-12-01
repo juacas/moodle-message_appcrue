@@ -42,7 +42,7 @@ if ($hassiteconfig) {
         $userfields["profile_field_{$field->shortname}"] = $field->name;
     }
 
-    /** @var $settings admin_settingpage */
+    /** @var admin_settingpage $settings */ // phpcs:ignore
     $settings->add(
         new admin_setting_configcheckbox(
             'message_appcrue/enable_push',

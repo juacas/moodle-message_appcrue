@@ -87,15 +87,14 @@ class message_helper {
      * @param \stdClass $eventdata The message object.
      * @return array An array with body, subject.
      */
-    public static function extract_instantmessage_body_subject(\core\message\message $eventdata): array {
+    public static function extract_instantmessage_body_subject($eventdata): array {
         $body = $eventdata->fullmessage;
         $subject = $eventdata->subject;
-        // Extract URL from body of fullmessage.
-        $re = '/((https?:\/\/)[^\s.]+\.[:\w][^\s"]+)/m';
+
         $messagetxt = $eventdata->fullmessage == "" ? $eventdata->smallmessage : $eventdata->fullmessage;
-        if (preg_match($re, $messagetxt, $matches)) {
-            $url = $matches[1];
-        }
+        // Link to conversation.
+        $url = new \moodle_url('/message/index.php', ['id' => $eventdata->userfrom->id]);
+
         // And add text from Subject.
         $body = $eventdata->smallmessage;
         // Process message.
@@ -110,6 +109,6 @@ class message_helper {
         // Remove empty lines.
         // Best viewed in just one html paragraph.
         $body = "<p>" . preg_replace('/^\r?\n/m', '', $body) . "</p>";
-        return [$body, $subject];
+        return [$body, $subject, $url];
     }
 }
