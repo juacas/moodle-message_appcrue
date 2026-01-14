@@ -76,9 +76,10 @@ class twinpush_client {
         $data->alert = $this->trim_alert_text($body);
         $data->inbox = true;
         // Ask to open the url in a webview and show a link in notification panel.
-        $data->url = $url;
+        $data->url = "https://moodle.com/"; // Dummy url, real url is in custom_properties.
         $data->custom_properties = new stdClass();
-        $data->custom_properties->target = 'webview';
+        $target = get_config('message_appcrue', 'openinwebview') ? 'webview' : 'webview_external';
+        $data->custom_properties->target = $target;
         $data->custom_properties->target_id = $url;
 
         $jsonnotificacion = json_encode($data);
@@ -132,13 +133,10 @@ class twinpush_client {
     }
     /**
      * Limit length of text to 240 characters and add ellipsis if needed.
-     * Clean html tags before trimming.
      * @param string $text
      * @return string trimmed text
      */
     protected function trim_alert_text($text) {
-        // Clean html tags.
-        $text = strip_tags($text);
         if (strlen($text) > 240) {
             $trimmed = substr($text, 0, 240) . '…';
             return $trimmed;

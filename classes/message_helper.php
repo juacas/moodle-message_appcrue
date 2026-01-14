@@ -58,7 +58,7 @@ class message_helper {
         } else {
             $body = $messagetext;
         }
-        return [$body, $subject];
+        return [$body, "📧 {$subject}"];
     }
 
     /**
@@ -80,7 +80,7 @@ class message_helper {
         // Replace natural end-of-paragraph new lines (.\n) with <p>.
         $body = '<p>' . preg_replace('/\.\r?\n/m', '</p><p>', $body) . '</p>';
 
-        return [$body, $subject];
+        return [$body, "📢 {$subject}"];
     }
     /**
      * Extract body and subject for instant messages.
@@ -109,6 +109,6 @@ class message_helper {
         // Remove empty lines.
         // Best viewed in just one html paragraph.
         $body = "<p>" . preg_replace('/^\r?\n/m', '', $body) . "</p>";
-        return [$body, $subject, $url];
+        return [$body, "💬 {$subject}", $url];
     }
 }

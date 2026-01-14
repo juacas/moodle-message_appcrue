@@ -97,6 +97,13 @@ if ($hassiteconfig) {
         PARAM_RAW_TRIMMED,
         100
     ));
+    // Select if the url must be opened in webview or external browser.
+    $settings->add(new admin_setting_configcheckbox(
+        'message_appcrue/openinwebview',
+        get_string('openinwebview', 'message_appcrue'),
+        get_string('openinwebview_help', 'message_appcrue'),
+        1
+    ));
     // Select if the messages are buffered.
     $settings->add(new admin_setting_configcheckbox(
         'message_appcrue/bufferedmode',

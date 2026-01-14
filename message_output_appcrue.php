@@ -139,7 +139,7 @@ class message_output_appcrue extends \message_output {
             [$body, $subject] = message_appcrue\message_helper::extract_localmail_body_subject($eventdata);
         }
 
-        $message->body = $body;
+        $message->body = strip_tags($body); // NOTE: Temporaly strip tags for push notification. Remove after fix in apps.
         // Create target url.
         $message->url = $url ? $this->get_target_url($url) : null;
         $message->subject = strip_tags($subject);
@@ -159,8 +159,8 @@ class message_output_appcrue extends \message_output {
         $url = urlencode($url);
         // Replace placeholders.
         $url = str_replace(
-            ['{url}', '{siteurl}', '<token>', '<bearer>'],
-            [$url, $CFG->wwwroot, '%3Ctoken%3E', '%3Cbearer%3E' ],
+            ['{url}', '{siteurl}'],
+            [$url, $CFG->wwwroot],
             $urlpattern
         );
         return $url;
