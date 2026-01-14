@@ -158,7 +158,11 @@ class message_output_appcrue extends \message_output {
         // Escape url.
         $url = urlencode($url);
         // Replace placeholders.
-        $url = str_replace(['{url}', '{siteurl}'], [$url, $CFG->wwwroot], $urlpattern);
+        $url = str_replace(
+            ['{url}', '{siteurl}', '<token>', '<bearer>'],
+            [$url, $CFG->wwwroot, '%3Ctoken%3E', '%3Cbearer%3E' ],
+            $urlpattern
+        );
         return $url;
     }
     /**

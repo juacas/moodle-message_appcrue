@@ -131,9 +131,14 @@ class twinpush_client {
         }
     }
     /**
-     * Limit length of text to 240 characters.
+     * Limit length of text to 240 characters and add ellipsis if needed.
+     * Clean html tags before trimming.
+     * @param string $text
+     * @return string trimmed text
      */
     protected function trim_alert_text($text) {
+        // Clean html tags.
+        $text = strip_tags($text);
         if (strlen($text) > 240) {
             $trimmed = substr($text, 0, 240) . '…';
             return $trimmed;
