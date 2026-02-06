@@ -84,7 +84,7 @@ if ($hassiteconfig) {
         'message_appcrue/match_user_by',
         get_string('match_user_by', 'message_appcrue'),
         get_string('match_user_by_help', 'message_appcrue'),
-        'id',
+        'username',
         $userfields
     ));
 
