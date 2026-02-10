@@ -99,13 +99,15 @@ class message_output_appcrue extends \message_output {
         } else {
             // Send message to pushAPI.
             $errors = $this->send_api_message([$eventdata->userto], $message->subject, $message->body, $message->url);
-            // Buffer message if any error occurred.
-            foreach ($errors as $userid => $devicealias) {
-                $user = new stdClass();
-                $user->id = $userid;
-                if (!$this->buffer_message($user, $message->subject, $message->body, $message->url, self::MESSAGE_FAILED)) {
-                    debugging("Error buffering message " . json_encode($message) . " for user {$user->id}.", DEBUG_DEVELOPER);
-                    return false;
+            if (get_config('message_appcrue', 'preserveundeliverable') == true) {
+                // Buffer message if any error occurred.
+                foreach ($errors as $userid => $devicealias) {
+                    $user = new stdClass();
+                    $user->id = $userid;
+                    if (!$this->buffer_message($user, $message->subject, $message->body, $message->url, self::MESSAGE_FAILED)) {
+                        debugging("Error buffering message " . json_encode($message) . " for user {$user->id}.", DEBUG_DEVELOPER);
+                        return false;
+                    }
                 }
             }
             $this->log_no_ajax("Message in error '{$message->subject}' buffered for users: " . implode(', ', array_keys($errors)));

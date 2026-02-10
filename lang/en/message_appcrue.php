@@ -26,7 +26,7 @@
  */
 
 defined('MOODLE_INTERNAL') || die();
-$string['api_callerror'] = 'Error calling AppCrue API';
+$string['api_callerror'] = 'Error calling AppCrue API: {$a}';
 $string['api_key'] = 'APIKey for AppCrue Notification';
 $string['api_key_help'] = 'APIKey for AppCrue Notification';
 $string['app_id'] = 'AppId for AppCrue Notification';

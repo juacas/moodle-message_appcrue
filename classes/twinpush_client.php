@@ -101,10 +101,10 @@ class twinpush_client {
         if (isset($respjson->errors)) {
             if ($respjson->errors->type == 'AppNotFound') {
                 throw new \moodle_exception('api_callerror', 'message_appcrue', '', 'App not found. Check App ID.');
-            } else if (isset($respjson->type) && $respjson->type == 'NotificationNotCreated') {
+            } else if (isset($respjson->errors->type) && $respjson->errors->type == 'NotificationNotCreated') {
                 $this->log_no_ajax("Error sending message '{$title}' to {$aliasesstr}: {$respjson->errors->message}");
                 return $devicealiases;
-            } else if (isset($respjson->type) && $respjson->type == 'DeviceAliasNotFound') {
+            } else if (isset($respjson->errors->type) && $respjson->errors->type == 'DeviceAliasNotFound') {
                 // Device alias not found. Remove it from the list.
                 foreach ($respjson->errors->device_aliases as $alias) {
                     $key = array_search($alias, $devicealiases);
@@ -125,7 +125,7 @@ class twinpush_client {
         // Check if any error occurred.
         $info = $client->get_info();
         if ($client->get_errno() || $info['http_code'] != 200) {
-            debugging('Curl error: ' . $client->get_errno() . ':' . $response, DEBUG_MINIMAL);
+            $this->log_no_ajax(date('Y-m-d H:i:s') . ' Curl error: ' . $client->get_errno() . ':' . $response);
             throw new \moodle_exception('api_callerror', 'message_appcrue', '', $client->error);
         } else {
             return [];

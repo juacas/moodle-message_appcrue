@@ -118,10 +118,4 @@ if ($hassiteconfig) {
         get_string('preserveundeliverable_help', 'message_appcrue'),
         0
     ));
-    $settings->hide_if(
-        'message_appcrue/preserveundeliverable',
-        'message_appcrue/bufferedmode',
-        'eq',
-        0
-    );
 }
