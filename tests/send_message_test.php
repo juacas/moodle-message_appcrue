@@ -31,7 +31,7 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-namespace message_appcrue\tests;
+namespace message_appcrue;
 
 /**
  * Testing send_message
@@ -40,7 +40,6 @@ namespace message_appcrue\tests;
  */
 final class send_message_test extends \advanced_testcase {
     use \core\message\send_message_test_trait;
-    
     /**
      * Plugin object.
      * @var \message_output_appcrue
@@ -52,7 +51,7 @@ final class send_message_test extends \advanced_testcase {
      */
     protected $users;
 
-    final public function setUp(): void {
+    public function setUp(): void {
         parent::setUp();
         $this->resetAfterTest();
         // Instantiate the message output provider.
@@ -61,7 +60,7 @@ final class send_message_test extends \advanced_testcase {
         $this->appcrueoutput->apiclient = new \message_appcrue\test\twinpush_client();
 
         self::$course = self::getDataGenerator()->create_course();
-        // Create 10 users
+        // Create 10 users.
         for ($i = 0; $i < 10; $i++) {
             $this->users[$i] = self::getDataGenerator()->create_user(['idnumber' => $i . '']);
         }
@@ -69,7 +68,7 @@ final class send_message_test extends \advanced_testcase {
         self::getDataGenerator()->enrol_user(self::$user->id, self::$course->id);
     }
 
-
+    // phpcs:disable
     /**
      * Test send_message to a single user.
      *
