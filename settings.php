@@ -66,6 +66,19 @@ if ($hassiteconfig) {
         '',
         PARAM_TEXT
     ));
+    // Add a button for testing the connection to TwinPUSH.
+    $settings->add(new admin_setting_description(
+        'message_appcrue/testconnection',
+        '',
+        html_writer::div(
+            html_writer::link(
+                new moodle_url('/message/output/appcrue/testconnection.php'),
+                get_string('testconnection', 'message_appcrue'),
+                ['class' => 'btn btn-secondary']
+            )
+        )
+    ));
+
     $settings->add(new admin_setting_configtext(
         'message_appcrue/group_name',
         get_string('group_name', 'message_appcrue'),
