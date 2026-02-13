@@ -255,69 +255,6 @@ class message_output_appcrue extends \message_output {
         }
         return $errors;
     }
-    /**
-     * Send the message using TwinPush.
-     * @param array $devicealiases The list of device aliases to send the message to. userid=> devicealias.
-     * @param string $title The title of the message.
-     * @param string $body The message contect to send to AppCrue.
-     * @param string $url url to see the details of the notification.
-     * @return array userid=>aliases not sent.
-     * @throws moodle_exception if API can't be reached.
-     */
-    public function send_api_message_chunk($devicealiases, $title, $body, $url = '') {
-        if (empty($devicealiases)) {
-            return [];
-        }
-
-        $apicreator = get_config('message_appcrue', 'apikey');
-        $appid = get_config('message_appcrue', 'appid');
-        $data = new stdClass();
-        $data->broadcast = false;
-        $data->devices_aliases = array_values($devicealiases);
-        $data->title = $title;
-        $data->group_name = get_config('message_appcrue', 'group_name');
-        $data->alert = $this->trim_alert_text($body);
-        $data->inbox = true;
-        // Ask to open the url in a webview and show a link in notification panel.
-        $data->url = $url;
-        $data->custom_properties = new stdClass();
-        $data->custom_properties->target = 'webview';
-        $data->custom_properties->target_id = $url;
-
-        $jsonnotificacion = json_encode($data);
-        $client = new curl();
-        $client->setHeader(['Content-Type:application/json', 'X-TwinPush-REST-API-Key-Creator:' . $apicreator]);
-        $options = [
-            'CURLOPT_RETURNTRANSFER' => true,
-            'CURLOPT_CONNECTTIMEOUT' => 5, // JPC: Limit impact on other scheduled tasks.
-        ];
-        $apiurl = 'https://appcrue.twinpush.com/api/v2/apps/' . $appid . '/notifications';
-        $response = $client->post(
-            $apiurl,
-            $jsonnotificacion,
-            $options
-        );
-        // Catch errors in response and log them.
-        $respjson = json_decode($response);
-        $aliasesstr = implode(', ', $devicealiases);
-        if (isset($respjson->errors)) {
-            if ($respjson->errors->type == 'AppNotFound') {
-                throw new moodle_exception('api_callerror', 'message_appcrue', '', 'App not found. Check App ID.');
-            }
-            $this->log_no_ajax("Error sending message '{$title}' to {$aliasesstr}: {$response}");
-            return $devicealiases;
-        } else {
-            $this->log_no_ajax("Message '{$title}' sent to {$aliasesstr}");
-        }
-        // Check if any error occurred.
-        $info = $client->get_info();
-        if ($client->get_errno() || $info['http_code'] != 200) {
-            debugging('Curl error: ' . $client->get_errno() . ':' . $response, DEBUG_MINIMAL);
-            throw new moodle_exception('api_callerror', 'message_appcrue', '', $client->error);
-        } else {
-            return [];
-        }
-    }
 
     /**
      * Limit text length to 240 characters.
@@ -341,6 +278,48 @@ class message_output_appcrue extends \message_output {
             profile_load_data($user);
         }
         return $user->$fieldname;
+    }
+    /**
+     * Search user fields and get the user
+     * @param string $fieldname the name of the field to search into
+     * @param string $matchvalue the value to search for.
+     * @return stdClass|false user structure
+     */
+    public function find_user($fieldname, $matchvalue) {
+        global $DB, $CFG;
+        if (empty($matchvalue)) {
+            return false;
+        }
+        // First check in standard fieldnames.
+        $fields = get_user_fieldnames();
+        if (array_search($fieldname, $fields) !== false) {
+            $user = $DB->get_record('user', [$fieldname => $matchvalue], '*');
+            if ($user == false) {
+                throw new Exception("No match with: {$fieldname} => {$matchvalue}");
+            }
+        } else {
+            require_once($CFG->dirroot . '/user/profile/lib.php');
+            $customfields = profile_get_custom_fields();
+            $fieldname = substr($fieldname, 14); // Trim prefix 'profile_field'.
+            $fieldid = null;
+            // Find custom field id.
+            foreach ($customfields as $field) {
+                if ($field->shortname == $fieldname) {
+                    $fieldid = $field->id;
+                    break;
+                }
+            }
+            // Query user.
+            $sql = 'fieldid = ? AND ' . $DB->sql_compare_text('data') . ' = ?';
+            $userid = $DB->get_record_select('user_info_data', $sql, [$fieldid, $matchvalue], 'userid');
+            if ($userid) {
+                $user = $DB->get_record('user', ['id' => $userid->userid], '*');
+            } else {
+                $user = false;
+                debugging("No match with: fieldid:{$fieldid} and data {$matchvalue}", DEBUG_NORMAL);
+            }
+        }
+        return $user;
     }
     /**
      * Creates necessary fields in the messaging config form.

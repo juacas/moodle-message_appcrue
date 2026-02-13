@@ -27,7 +27,7 @@
 
 defined('MOODLE_INTERNAL') || die();
 $string['api_callerror'] = 'Error calling AppCrue API: {$a}';
-$string['api_key'] = 'APIKey for AppCrue Notification';
+$string['api_key'] = 'CreatorKey for AppCrue Notification';
 $string['api_key_help'] = 'APIKey for AppCrue Notification';
 $string['app_id'] = 'AppId for AppCrue Notification';
 $string['app_id_help'] = 'AppId for AppCrue Notification';
@@ -48,5 +48,18 @@ $string['preserveundeliverable_help'] = 'If the message is rejected by TwinPush 
 $string['privacy:metadata'] = 'The "Push Notifications for AppCrue" plugin does not store any personal data.';
 $string['sendbufferedtask'] = 'Send buffered messages';
 $string['sendbufferedtaskerror'] = 'Some recipients were not reached for messages: {$a}';
+$string['sendtestmessage'] = 'Send test message';
+$string['testconfigurationmissing'] = 'Configure the AppCrue API key and App ID before sending test messages.';
+$string['testconnection'] = 'Test AppCrue connection';
+$string['testconnectiondesc'] = 'Send a test notification to a user to verify the TwinPush credentials and device alias.';
+$string['testmessagebody'] = '✅Test notification triggered by {$a}.';
+$string['testmessageerrors'] = 'TwinPush reported delivery issues for: {$a}';
+$string['testmessageerroritem'] = 'User ID {$a->userid} (alias: {$a->alias})';
+$string['testmessageexception'] = 'TwinPush call failed: {$a}';
+$string['testmessagenoalias'] = 'Missing device aliases in TwinPush response.';
+$string['testmessagesent'] = 'Test message sent to {$a}.';
+$string['testmessagesubject'] = '🧑🏻‍🔧{$a}: AppCrue connection test';
+$string['testusername'] = 'Username';
+$string['testusernotfound'] = 'No user found with the username "{$a}".';
 $string['url_pattern'] = 'URL pattern for the event\'s links.';
 $string['url_pattern_help'] = 'URL pattern for push notifications. The following variables are available: {url}:the message\'s url, {siteurl}:base url of the server. Example: {siteurl}/local/appcrue/autologin.php?urltogo={url}&fallback=continue&<bearer>';
