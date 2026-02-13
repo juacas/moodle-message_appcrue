@@ -14,10 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-require(__DIR__ . '/../../../config.php');
-require_once($CFG->libdir . '/formslib.php');
-require_once($CFG->dirroot . '/user/lib.php');
-require_once($CFG->dirroot . '/message/output/appcrue/message_output_appcrue.php');
 /**
  * Test connection page for AppCrue message plugin.
  *
@@ -26,6 +22,10 @@ require_once($CFG->dirroot . '/message/output/appcrue/message_output_appcrue.php
  * @author  Juan Pablo de Castro
  * @copyright 2021 onwards
  */
+require(__DIR__ . '/../../../config.php');
+require_once($CFG->libdir . '/formslib.php');
+require_once($CFG->dirroot . '/user/lib.php');
+require_once($CFG->dirroot . '/message/output/appcrue/message_output_appcrue.php');
 require_login();
 $systemcontext = context_system::instance();
 require_capability('moodle/site:config', $systemcontext);
@@ -37,6 +37,9 @@ $PAGE->set_title(get_string('testconnection', 'message_appcrue'));
 $PAGE->set_heading(get_string('testconnection', 'message_appcrue'));
 /**
  * Form for the device alias to test.
+ * @package message_appcrue
+ * @copyright 2026 Juan Pablo
+ * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class message_appcrue_testconnection_form extends moodleform {
     /**
@@ -71,19 +74,21 @@ $notifications = [];
 $mform = new message_appcrue_testconnection_form();
 
 if ($data = $mform->get_data()) {
-
     try {
+        global $SITE, $USER;
         $mform->set_data($data);
         $sender = new message_output_appcrue();
         $fieldname = get_config('local_appcrue', 'match_user_by');
         $recipient = $sender->find_user($fieldname, trim($data->username));
-        global $SITE, $USER;
         $subject = get_string('testmessagesubject', 'message_appcrue', format_string($SITE->shortname));
         $body = get_string('testmessagebody', 'message_appcrue', fullname($USER));
         $targeturl = (new moodle_url('/'))->out(false);
         $errors = $sender->send_api_message([$recipient], $subject, $body, $targeturl);
         if (empty($errors)) {
-            $notifications[] = [get_string('testmessagesent', 'message_appcrue', fullname($recipient)), core\output\notification::NOTIFY_SUCCESS];
+            $notifications[] = [
+                get_string('testmessagesent', 'message_appcrue', fullname($recipient)),
+                core\output\notification::NOTIFY_SUCCESS,
+                ];
         } else {
             $failures = [];
             foreach ($errors as $userid => $alias) {
@@ -97,10 +102,16 @@ if ($data = $mform->get_data()) {
                 );
             }
             $failures = implode('; ', $failures);
-            $notifications[] = [get_string('testmessageerrors', 'message_appcrue', $failures), core\output\notification::NOTIFY_ERROR];
+            $notifications[] = [
+                get_string('testmessageerrors', 'message_appcrue', $failures),
+                core\output\notification::NOTIFY_ERROR,
+                ];
         }
     } catch (Exception $exception) {
-        $notifications[] = [get_string('testmessageexception', 'message_appcrue', s($exception->getMessage())), core\output\notification::NOTIFY_ERROR];
+        $notifications[] = [
+            get_string('testmessageexception', 'message_appcrue', s($exception->getMessage())),
+            core\output\notification::NOTIFY_ERROR,
+            ];
     }
 }
 

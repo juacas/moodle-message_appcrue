@@ -283,20 +283,17 @@ class message_output_appcrue extends \message_output {
      * Search user fields and get the user
      * @param string $fieldname the name of the field to search into
      * @param string $matchvalue the value to search for.
-     * @return stdClass|false user structure
+     * @return stdClass user structure
      */
     public function find_user($fieldname, $matchvalue) {
         global $DB, $CFG;
         if (empty($matchvalue)) {
-            return false;
+            throw new Exception("Empty matchvalue to search by: {$fieldname}");
         }
         // First check in standard fieldnames.
         $fields = get_user_fieldnames();
         if (array_search($fieldname, $fields) !== false) {
             $user = $DB->get_record('user', [$fieldname => $matchvalue], '*');
-            if ($user == false) {
-                throw new Exception("No match with: {$fieldname} => {$matchvalue}");
-            }
         } else {
             require_once($CFG->dirroot . '/user/profile/lib.php');
             $customfields = profile_get_custom_fields();
@@ -318,6 +315,9 @@ class message_output_appcrue extends \message_output {
                 $user = false;
                 debugging("No match with: fieldid:{$fieldid} and data {$matchvalue}", DEBUG_NORMAL);
             }
+        }
+        if ($user == false) {
+            throw new Exception("No match with: {$fieldname} => {$matchvalue}");
         }
         return $user;
     }

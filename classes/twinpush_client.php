@@ -101,13 +101,14 @@ class twinpush_client {
         if (isset($respjson->errors)) {
             if (
                 $respjson->errors->type == 'AppNotFound' ||
-                $respjson->errors->type == 'InvalidCreatorToken') {
+                $respjson->errors->type == 'InvalidCreatorToken'
+            ) {
                 throw new \moodle_exception(
                     'api_callerror',
                     'message_appcrue',
                     '',
                     $respjson->errors->type
-                    );
+                );
             } else if (isset($respjson->errors->type) && $respjson->errors->type == 'NotificationNotCreated') {
                 $this->log_no_ajax("Error sending message '{$title}' to {$aliasesstr}: {$respjson->errors->message}");
                 return $devicealiases;
