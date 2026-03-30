@@ -108,7 +108,7 @@ if ($hassiteconfig) {
         get_string('url_pattern_help', 'message_appcrue'),
         '',
         PARAM_RAW_TRIMMED,
-        100
+        200
     ));
     // Select if the url must be opened in webview or external browser.
     $settings->add(new admin_setting_configcheckbox(

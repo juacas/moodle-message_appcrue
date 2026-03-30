@@ -127,18 +127,16 @@ class message_output_appcrue extends \message_output {
         $message = new stdClass();
         $level = 3; // Default heading level.
 
-        $url = $eventdata->contexturl;
-
         $body = $eventdata->fullmessage;
         $subject = $eventdata->subject;
 
         // Parse and format diferent message formats.
         if ($eventdata->component == 'mod_forum') {
-            [$body, $subject] = message_appcrue\message_helper::extract_forum_body_subject($eventdata);
+            [$body, $subject, $url] = message_appcrue\message_helper::extract_forum_body_subject($eventdata);
         } else if ($eventdata->component == 'moodle' && $eventdata->name == 'instantmessage') {
             [$body, $subject, $url] = message_appcrue\message_helper::extract_instantmessage_body_subject($eventdata);
         } else if ($eventdata->component == 'local_mail') {
-            [$body, $subject] = message_appcrue\message_helper::extract_localmail_body_subject($eventdata);
+            [$body, $subject, $url] = message_appcrue\message_helper::extract_localmail_body_subject($eventdata);
         }
 
         $message->body = strip_tags($body); // NOTE: Temporaly strip tags for push notification. Remove after fix in apps.
@@ -148,21 +146,27 @@ class message_output_appcrue extends \message_output {
         return $message;
     }
     /**
-     * If module local_appcrue is installed and configured uses autologin.php to navigate.
+     * TODO: If module local_appcrue is installed and configured uses
+     * create_deep_url() instead of url pattern to navigate.
      * @see local_appcrue plugin.
+     * @param moodle_url $url the url to convert.
+     * @return string the url to navigate in the app.
      */
-    protected function get_target_url($url) {
+    protected function get_target_url(moodle_url $url) {
         global $CFG;
         $urlpattern = get_config('message_appcrue', 'urlpattern');
         if (empty($urlpattern)) {
             return $url;
         }
+        // Relative URL to the event source.
+        $relurl = $url->out_as_local_url();
+        $relurl = urlencode($relurl);
         // Escape url.
         $url = urlencode($url);
         // Replace placeholders.
         $url = str_replace(
-            ['{url}', '{siteurl}'],
-            [$url, $CFG->wwwroot],
+            ['{url}', '{relurl}', '{siteurl}'],
+            [$url, $relurl, $CFG->wwwroot],
             $urlpattern
         );
         return $url;

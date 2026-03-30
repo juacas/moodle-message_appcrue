@@ -40,7 +40,7 @@ class message_helper {
      * View message: https://moodle3.local/moodle405/local/mail/view.php?t=inbox&m=168"
      *
      * @param \stdClass $eventdata The message object.
-     * @return array An array with body, subject.
+     * @return array An array with body, subject, replyurl.
      */
     public static function extract_localmail_body_subject($eventdata): array {
         $messagetext = $eventdata->fullmessage;
@@ -58,13 +58,15 @@ class message_helper {
         } else {
             $body = $messagetext;
         }
-        return [$body, "📧 {$subject}"];
+
+        $replylink = new \moodle_url($eventdata->contexturl);
+        return [$body, "📧 {$subject}", $replylink];
     }
 
     /**
      * Extract body and subject from forum notification.
      * @param \stdClass $eventdata The message object.
-     * @return array An array with body, subject.
+     * @return array An array with body, subject, url.
      */
     public static function extract_forum_body_subject($eventdata): array {
         $subject = $eventdata->subject;
@@ -80,12 +82,14 @@ class message_helper {
         // Replace natural end-of-paragraph new lines (.\n) with <p>.
         $body = '<p>' . preg_replace('/\.\r?\n/m', '</p><p>', $body) . '</p>';
 
-        return [$body, "📢 {$subject}"];
+        $url = new \moodle_url($eventdata->contexturl);
+
+        return [$body, "📢 {$subject}", $url];
     }
     /**
      * Extract body and subject for instant messages.
      * @param \stdClass $eventdata The message object.
-     * @return array An array with body, subject.
+     * @return array An array with body, subject, url.
      */
     public static function extract_instantmessage_body_subject($eventdata): array {
         $body = $eventdata->fullmessage;
