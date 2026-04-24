@@ -62,4 +62,4 @@ $string['testmessagesubject'] = '🧑🏻‍🔧{$a}: AppCrue connection test';
 $string['testusername'] = 'Username';
 $string['testusernotfound'] = 'No user found with the username "{$a}".';
 $string['url_pattern'] = 'URL pattern for the event\'s links.';
-$string['url_pattern_help'] = 'URL pattern for push notifications. The following variables are available: {url}:the message\'s url, {relurl}: the message\'s relative url, {siteurl}:base url of the server. Example: {siteurl}/local/appcrue/autologin.php?urltogo={url}&fallback=continue&token=&lt;appcrue_token&gt;';
+$string['url_pattern_help'] = 'URL pattern for push notifications. The following variables are available: {url}:the message\'s url, {relurl}: the message\'s relative url, {siteurl}:base url of the server. Example: {siteurl}/local/appcrue/autologin.php?urltogo={relurl}&fallback=continue&token=&lt;appcrue_token&gt;';
