@@ -78,8 +78,7 @@ if ($data = $mform->get_data()) {
         global $SITE, $USER;
         $mform->set_data($data);
         $sender = new message_output_appcrue();
-        $fieldname = get_config('local_appcrue', 'match_user_by');
-        $recipient = $sender->find_user($fieldname, trim($data->username));
+        $recipient = $sender->find_user('username', trim($data->username));
         $subject = get_string('testmessagesubject', 'message_appcrue', format_string($SITE->shortname));
         $body = get_string('testmessagebody', 'message_appcrue', fullname($USER));
         $targeturl = (new moodle_url('/'))->out(false);
