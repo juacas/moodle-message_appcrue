@@ -76,13 +76,6 @@ class twinpush_client {
         $data->group_name = get_config('message_appcrue', 'group_name');
         $data->alert = $this->trim_alert_text($body);
         $data->inbox = true;
-        // Ask to open the url in a webview and show a link in notification panel.
-        // Use a url-escaped url field.
-        // As in 7.24 IOS app uses utl rather than targetid. But does not recognize <token> marks.
-        // Until hotfix is released in appcrue, we will use url field with escaped <token> marks, that will not work.
-        $urlobj = new \moodle_url($url);
-
-        $data->url = $urlobj->out(false);
 
         $data->custom_properties = new stdClass();
         $target = get_config('message_appcrue', 'openinwebview') ? 'webview' : 'webview_external';
