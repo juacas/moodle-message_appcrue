@@ -133,8 +133,10 @@ class twinpush_client {
         // Check if any error occurred.
         $info = $client->get_info();
         if ($client->get_errno() || $info['http_code'] != 200) {
-            $this->log_no_ajax(date('Y-m-d H:i:s') . ' Curl error: ' . $client->get_errno() . ':' . $response);
-            throw new \moodle_exception('api_callerror', 'message_appcrue', '', $client->error);
+            $clienterror = $client->get_errno();;
+            $debuginfo = date('Y-m-d H:i:s') . ' Curl error: ' . $clienterror . ':' . $jsonnotificacion . ' Response: ' . $response;
+            $this->log_no_ajax($debuginfo);
+            throw new \moodle_exception('api_callerror', 'message_appcrue', '', $debuginfo);
         } else {
             return [];
         }

@@ -138,8 +138,11 @@ class sendbuffered extends scheduled_task {
         // Delete fully sent messages (with no pending recipients).
         $sqlwhere = "id NOT IN (SELECT DISTINCT message_id FROM {message_appcrue_recipients})";
         $DB->delete_records_select('message_appcrue_buffered', $sqlwhere);
+        // Errors are logged but not thrown, as they are expected to be unrecoverable errors related to specific recipients.
+        // Push notifications are not that useful if they cannot be delivered, so we log them for debugging but do not
+        // throw exceptions that would signal the retry of the task.
         if (!empty($errorcondition)) {
-            throw new moodle_exception('sendbufferedtaskerror', 'message_appcrue', '', json_encode($errorcondition));
+            debugging(get_string('sendbufferedtaskerror', 'message_appcrue', json_encode($errorcondition)));
         }
     }
     /**
