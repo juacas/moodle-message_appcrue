@@ -183,20 +183,20 @@ class message_output_appcrue extends \message_output {
         global $CFG;
         $urlpattern = get_config('message_appcrue', 'urlpattern');
         if (empty($urlpattern)) {
-            return $url;
+            return $url->out(false);
         }
         // Relative URL to the event source.
         $relurl = $url->out_as_local_url();
-        $relurl = urlencode($relurl);
+        $encodedrelurl = urlencode($relurl);
         // Escape url.
-        $url = urlencode($url);
+        $encodedurl = urlencode($url->out(false));
         // Replace placeholders.
-        $url = str_replace(
+        $targeturl = str_replace(
             ['{url}', '{relurl}', '{siteurl}'],
-            [$url, $relurl, $CFG->wwwroot],
+            [$encodedurl, $encodedrelurl, $CFG->wwwroot],
             $urlpattern
         );
-        return $url;
+        return $targeturl;
     }
     /**
      * Buffer messages (by title, message, url hash) and recipients in separate tables.
