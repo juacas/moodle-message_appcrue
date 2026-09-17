@@ -150,6 +150,12 @@ class message_output_appcrue extends \message_output {
 
         $body = $eventdata->fullmessage;
         $subject = $eventdata->subject;
+        $url = null;
+        if (!empty($eventdata->contexturl)) {
+            $url = ($eventdata->contexturl instanceof \moodle_url)
+                ? $eventdata->contexturl
+                : new \moodle_url($eventdata->contexturl);
+        }
 
         // Parse and format diferent message formats.
         if ($eventdata->component == 'mod_forum') {
