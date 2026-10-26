@@ -52,12 +52,11 @@ if ($hassiteconfig) {
         )
     );
 
-    $settings->add(new admin_setting_configtext(
+    $settings->add(new admin_setting_configpasswordunmask(
         'message_appcrue/apikey',
         get_string('api_key', 'message_appcrue'),
         get_string('api_key_help', 'message_appcrue'),
-        '',
-        PARAM_TEXT
+        ''
     ));
     $settings->add(new admin_setting_configtext(
         'message_appcrue/appid',

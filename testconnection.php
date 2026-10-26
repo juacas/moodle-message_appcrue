@@ -81,7 +81,8 @@ if ($data = $mform->get_data()) {
         $recipient = $sender->find_user('username', trim($data->username));
         $subject = get_string('testmessagesubject', 'message_appcrue', format_string($SITE->shortname));
         $body = get_string('testmessagebody', 'message_appcrue', fullname($USER));
-        $targeturl = (new moodle_url('/'))->out(false);
+        $targeturl = new moodle_url('/my/courses.php');
+        $targeturl = message_output_appcrue::get_target_url($targeturl);
         $errors = $sender->send_api_message([$recipient], $subject, $body, $targeturl);
         if (empty($errors)) {
             $notifications[] = [

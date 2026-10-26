@@ -92,26 +92,47 @@ class message_output_appcrue extends \message_output {
         }
 
         $message = $this->build_message($eventdata);
-
-        if (get_config('message_appcrue', 'bufferedmode') == true) {
-            // Buffer volume messages in a table an send them in bulk.
-            return $this->buffer_message($eventdata->userto, $message->subject, $message->body, $message->url, self::MESSAGE_READY);
-        } else {
-            // Send message to pushAPI.
-            $errors = $this->send_api_message([$eventdata->userto], $message->subject, $message->body, $message->url);
-            if (get_config('message_appcrue', 'preserveundeliverable') == true) {
-                // Buffer message if any error occurred.
-                foreach ($errors as $userid => $devicealias) {
-                    $user = new stdClass();
-                    $user->id = $userid;
-                    if (!$this->buffer_message($user, $message->subject, $message->body, $message->url, self::MESSAGE_FAILED)) {
-                        debugging("Error buffering message " . json_encode($message) . " for user {$user->id}.", DEBUG_DEVELOPER);
-                        return false;
+        // Eat exceptions to avoid retrying sending the message in the next cron execution.
+        // We will have it buffered for later retry or we log the error and move on.
+        try {
+            if (get_config('message_appcrue', 'bufferedmode') == true) {
+                // Buffer volume messages in a table an send them in bulk.
+                $this->buffer_message(
+                    $eventdata->userto,
+                    $message->subject,
+                    $message->body,
+                    $message->url,
+                    self::MESSAGE_READY
+                );
+                return true;
+            } else {
+                // Send message to pushAPI.
+                $errors = $this->send_api_message([$eventdata->userto], $message->subject, $message->body, $message->url);
+                if (get_config('message_appcrue', 'preserveundeliverable') == true) {
+                    // Buffer message if any error occurred.
+                    foreach ($errors as $userid => $devicealias) {
+                        $user = new stdClass();
+                        $user->id = $userid;
+                        if (!$this->buffer_message($user, $message->subject, $message->body, $message->url, self::MESSAGE_FAILED)) {
+                            debugging(
+                                "Error buffering message "
+                                . json_encode($message)
+                                . " for user {$user->id}.",
+                                DEBUG_DEVELOPER
+                            );
+                            return true; // Return true to avoid retrying sending the message in the next cron execution.
+                        }
                     }
                 }
+                $this->log_no_ajax(
+                    "Message in error '{$message->subject}' buffered for users: "
+                    . implode(', ', array_keys($errors))
+                );
+                return true;
             }
-            $this->log_no_ajax("Message in error '{$message->subject}' buffered for users: " . implode(', ', array_keys($errors)));
-            return true;
+        } catch (Exception $e) {
+            $this->log_no_ajax("Error sending message '{$message->subject}' to user {$eventdata->userto->id}: " . $e->getMessage());
+            return true; // Return true to avoid retrying sending the message in the next cron execution.
         }
     }
     /**
@@ -129,6 +150,12 @@ class message_output_appcrue extends \message_output {
 
         $body = $eventdata->fullmessage;
         $subject = $eventdata->subject;
+        $url = null;
+        if (!empty($eventdata->contexturl)) {
+            $url = ($eventdata->contexturl instanceof \moodle_url)
+                ? $eventdata->contexturl
+                : new \moodle_url($eventdata->contexturl);
+        }
 
         // Parse and format diferent message formats.
         if ($eventdata->component == 'mod_forum') {
@@ -141,7 +168,7 @@ class message_output_appcrue extends \message_output {
 
         $message->body = strip_tags($body); // NOTE: Temporaly strip tags for push notification. Remove after fix in apps.
         // Create target url.
-        $message->url = $url ? $this->get_target_url($url) : null;
+        $message->url = $url ? self::get_target_url($url) : null;
         $message->subject = strip_tags($subject);
         return $message;
     }
@@ -152,24 +179,24 @@ class message_output_appcrue extends \message_output {
      * @param moodle_url $url the url to convert.
      * @return string the url to navigate in the app.
      */
-    protected function get_target_url(moodle_url $url) {
+    public static function get_target_url(moodle_url $url) {
         global $CFG;
         $urlpattern = get_config('message_appcrue', 'urlpattern');
         if (empty($urlpattern)) {
-            return $url;
+            return $url->out(false);
         }
         // Relative URL to the event source.
         $relurl = $url->out_as_local_url();
-        $relurl = urlencode($relurl);
+        $encodedrelurl = urlencode($relurl);
         // Escape url.
-        $url = urlencode($url);
+        $encodedurl = urlencode($url->out(false));
         // Replace placeholders.
-        $url = str_replace(
+        $targeturl = str_replace(
             ['{url}', '{relurl}', '{siteurl}'],
-            [$url, $relurl, $CFG->wwwroot],
+            [$encodedurl, $encodedrelurl, $CFG->wwwroot],
             $urlpattern
         );
-        return $url;
+        return $targeturl;
     }
     /**
      * Buffer messages (by title, message, url hash) and recipients in separate tables.

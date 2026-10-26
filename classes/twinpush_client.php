@@ -77,10 +77,14 @@ class twinpush_client {
         $data->alert = $this->trim_alert_text($body);
         $data->inbox = true;
 
-        $data->custom_properties = new stdClass();
-        $target = get_config('message_appcrue', 'openinwebview') ? 'webview' : 'webview_external';
-        $data->custom_properties->target = $target;
-        $data->custom_properties->target_id = $url;
+        if (!empty($url)) {
+            $data->custom_properties = new stdClass();
+            $target = get_config('message_appcrue', 'openinwebview') ? 'webview' : 'webview_external';
+            $data->custom_properties->target = $target;
+            $data->custom_properties->target_id = is_object($url) && method_exists($url, 'out')
+                ? $url->out(false)
+                : (string) $url;
+        }
 
         $jsonnotificacion = json_encode($data);
         $client = new curl();
@@ -88,6 +92,7 @@ class twinpush_client {
         $options = [
             'CURLOPT_RETURNTRANSFER' => true,
             'CURLOPT_CONNECTTIMEOUT' => 5, // JPC: Limit impact on other scheduled tasks.
+            'CURLOPT_TIMEOUT' => 15, // Limit response read timeout to avoid cron hang.
         ];
         $apiurl = 'https://appcrue.twinpush.com/api/v2/apps/' . $this->appid . '/notifications';
         $response = $client->post(
