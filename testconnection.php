@@ -75,23 +75,44 @@ $mform = new message_appcrue_testconnection_form();
 
 if ($data = $mform->get_data()) {
     try {
-        global $SITE, $USER;
         $mform->set_data($data);
         $sender = new message_output_appcrue();
         $recipient = $sender->find_user('username', trim($data->username));
-        $subject = get_string('testmessagesubject', 'message_appcrue', format_string($SITE->shortname));
-        $body = get_string('testmessagebody', 'message_appcrue', fullname($USER));
-        $targeturl = new moodle_url('/my/courses.php');
-        $targeturl = message_output_appcrue::get_target_url($targeturl);
-        $errors = $sender->send_api_message([$recipient], $subject, $body, $targeturl);
-        if (empty($errors)) {
+        $testresult = $sender->send_test_notification($recipient);
+        if ($testresult['status'] === 'sent') {
             $notifications[] = [
                 get_string('testmessagesent', 'message_appcrue', fullname($recipient)),
                 core\output\notification::NOTIFY_SUCCESS,
                 ];
+        } else if ($testresult['status'] === 'missingconfig') {
+            $notifications[] = [
+                get_string('testconfigurationmissing', 'message_appcrue'),
+                core\output\notification::NOTIFY_ERROR,
+                ];
+        } else if ($testresult['status'] === 'noalias') {
+            $notifications[] = [
+                get_string(
+                    'testmessageerrors',
+                    'message_appcrue',
+                    get_string(
+                        'testmessageerroritem',
+                        'message_appcrue',
+                        (object)[
+                            'userid' => $recipient->id,
+                            'alias' => get_string('testmessagenoalias', 'message_appcrue'),
+                        ]
+                    )
+                ),
+                core\output\notification::NOTIFY_ERROR,
+                ];
+        } else if ($testresult['status'] === 'exception') {
+            $notifications[] = [
+                get_string('testmessageexception', 'message_appcrue', s($testresult['message'])),
+                core\output\notification::NOTIFY_ERROR,
+                ];
         } else {
             $failures = [];
-            foreach ($errors as $userid => $alias) {
+            foreach ($testresult['errors'] as $userid => $alias) {
                 $failures[] = get_string(
                     'testmessageerroritem',
                     'message_appcrue',
@@ -107,7 +128,7 @@ if ($data = $mform->get_data()) {
                 core\output\notification::NOTIFY_ERROR,
                 ];
         }
-    } catch (Exception $exception) {
+    } catch (Throwable $exception) {
         $notifications[] = [
             get_string('testmessageexception', 'message_appcrue', s($exception->getMessage())),
             core\output\notification::NOTIFY_ERROR,

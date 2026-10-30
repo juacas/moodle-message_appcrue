@@ -288,6 +288,37 @@ class message_output_appcrue extends \message_output {
     }
 
     /**
+     * Send the real test notification used by the plugin's connection-test page.
+     *
+     * @param stdClass $recipient Moodle user to notify.
+     * @return array Test status and delivery errors, if any.
+     */
+    public function send_test_notification(stdClass $recipient): array {
+        global $CFG, $SITE, $USER;
+
+        if (!$this->is_system_configured()) {
+            return ['status' => 'missingconfig'];
+        }
+        try {
+            if (strpos((string)get_config('message_appcrue', 'match_user_by'), 'profile_field_') === 0) {
+                require_once($CFG->dirroot . '/user/profile/lib.php');
+            }
+            if (empty($this->get_nick_name($recipient))) {
+                return ['status' => 'noalias'];
+            }
+            $subject = get_string('testmessagesubject', 'message_appcrue', format_string($SITE->shortname));
+            $body = get_string('testmessagebody', 'message_appcrue', fullname($USER));
+            $targeturl = self::get_target_url(new \moodle_url('/my/courses.php'));
+            $errors = $this->send_api_message([$recipient], $subject, $body, $targeturl);
+            return empty($errors)
+                ? ['status' => 'sent']
+                : ['status' => 'errors', 'errors' => $errors];
+        } catch (\Throwable $exception) {
+            return ['status' => 'exception', 'message' => $exception->getMessage()];
+        }
+    }
+
+    /**
      * Limit text length to 240 characters.
      *
      * @param string $text body message.
@@ -303,7 +334,7 @@ class message_output_appcrue extends \message_output {
      * Returns the target nickname of the user in the Push API
      */
     public function get_nick_name($user) {
-        $fieldname = get_config('message_appcrue', 'match_user_by');
+        $fieldname = get_config('message_appcrue', 'match_user_by') ?: 'username';
         if (!isset($user->$fieldname)) {
             // Load profile data.
             profile_load_data($user);
